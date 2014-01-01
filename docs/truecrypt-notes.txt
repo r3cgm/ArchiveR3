@@ -1,0 +1,29 @@
+TrueCrypt download:
+
+ wget http://www.truecrypt.org/download/truecrypt-7.1a-linux-console-x64.tar.gz
+
+ARCHIVE=test
+SIZE=10000000
+
+    truecrypt \
+        --create \
+        --password=test \
+        --volume-type=normal \
+        --size=$SIZE \
+        --hash=ripemd-160 \
+        --encryption=aes \
+        --filesystem=ext 4 \
+        --text \
+        --non-interactive \
+        $ARCHIVE.tc
+
+    truecrypt \
+        --password=test \
+        --non-interactive \
+        --text \
+        $ARCHIVE.tc \
+        test
+
+    truecrypt \
+        --dismount \
+        $ARCHIVE.tc
