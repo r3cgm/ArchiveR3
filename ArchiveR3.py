@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import ConfigParser
+
 
 class ArchiveR3:
     """ Library class for the ArchiveR3 backup, verify, and restore system. """
@@ -9,6 +11,16 @@ class ArchiveR3:
 
     def init_vars(self):
         """ Initialize class variables. """
+
+    def config_read(self):
+        """ Read the configuration. """
+        self.config = ConfigParser.RawConfigParser()
+        self.config.read('config')
+        self.config.archives = self.config.get('ArchiveR3', 'archives')
+        self.config.backup_dir = self.config.get('ArchiveR3', 'backup_dir')
+        self.config.log_dir = self.config.get('ArchiveR3', 'log_dir')
+        self.config.data_dir = self.config.get('ArchiveR3', 'data_dir')
+        self.config.stale_age = self.config.getint('ArchiveR3', 'stale_age')
 
     def main(self):
         """ If you call the python as a script, this is what gets executed. """
