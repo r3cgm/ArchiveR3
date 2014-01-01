@@ -1,0 +1,6 @@
+[ArchiveR3]
+backupdir: /mnt/cloud/ArchiveR3/
+logdir: /tmp/ArchiveR3/log/
+datadir: /tmp/ArchiveR3/datadir/
+archives: /mnt/nas/USERNAME/DIR1 /home/USERNAME /tmp/SOMEDIR
+stale_age: 86400
