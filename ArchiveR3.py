@@ -24,6 +24,12 @@ class ArchiveR3:
         self.config.password_base = self.config.get('ArchiveR3',
                                                     'password_base')
 
+    def status_item(self, item):
+        sys.stdout.write('%22s: ' % item)
+
+    def status_result(self, result):
+        print result
+
     def main(self):
         """ If you call the python as a script, this is what gets executed. """
 
