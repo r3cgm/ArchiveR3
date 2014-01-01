@@ -21,6 +21,8 @@ class ArchiveR3:
         self.config.log_dir = self.config.get('ArchiveR3', 'log_dir')
         self.config.data_dir = self.config.get('ArchiveR3', 'data_dir')
         self.config.stale_age = self.config.getint('ArchiveR3', 'stale_age')
+        self.config.password_base = self.config.get('ArchiveR3',
+                                                    'password_base')
 
     def main(self):
         """ If you call the python as a script, this is what gets executed. """
