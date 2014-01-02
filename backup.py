@@ -20,14 +20,10 @@ class backup:
         """ Process command-line arguments. """
         parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            description='Verify a backup has integrity by comparing local '
-            'files against remote ones.  The contents of each file are '
-            'inspected, as well as the presense or absense of local and '
-            'remote files.  The state of both local archive and remote '
-            'backup are stored.  This state is used later in order to speed '
-            'up the validation process.  For example, this tool can '
-            'preferentially validate the files whose previously known state '
-            'is the oldest.')
+            description='Backup files from a \'local\' to a \'remote\' '
+            'location.  Please be sure to create and edit your config file, '
+            'for example by copying config.generic to config.mine and '
+            'invoking this tool with it.')
         parser.add_argument('config', action='store',
                             help='Specify an ArchiveR3 config file.')
         parser.add_argument('-v', dest='verbose', action='store_true',
