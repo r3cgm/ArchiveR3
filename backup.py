@@ -13,8 +13,10 @@ class backup:
     cloud. """
 
     def __init__(self):
-        self.config = config_read()
         self.init_vars()
+
+    def init_vars(self):
+        """ Initialize class variables. """
 
     def args_process(self):
         """ Process command-line arguments. """
@@ -38,18 +40,24 @@ class backup:
             sys.exit(1)
         self.args = parser.parse_args()
 
-    def init_vars(self):
-        """ Initialize class variables. """
-
     def backup(self):
         status_item('Performing backups now')
         status_result('TBD')
 
     def main(self):
-        """ If you call the python as a script, this is what gets executed """
+        """ If you call the python as a script, this is what gets executed. """
         self.args_process()
         time_init = print_header('backup')
-        self.backup()
+        self.config = config_read()
+        status_item('Configuration')
+        status_result('validating')
+        if config_validate(self.config):
+            status_item('Configuration validation')
+            status_result('FAILED', 3)
+        else:
+            status_item('Configuration validation')
+            status_result('SUCCESS', 1)
+            self.backup()
         print_footer('backup', time_init)
 
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import ConfigParser
+import os
 import sys
 import time
 
@@ -9,13 +10,29 @@ def config_read():
     """ Read the configuration. """
     config = ConfigParser.RawConfigParser()
     config.read('config')
+
     config.archives = config.get('ArchiveR3', 'archives')
     config.backup_dir = config.get('ArchiveR3', 'backup_dir')
     config.log_dir = config.get('ArchiveR3', 'log_dir')
     config.data_dir = config.get('ArchiveR3', 'data_dir')
     config.stale_age = config.getint('ArchiveR3', 'stale_age')
     config.password_base = config.get('ArchiveR3', 'password_base')
+
     return config
+
+def config_validate(config):
+    """ Make sure that all the configuration settings make sense.  Try to
+    be helpful and intervene if there are issues, otherwise bail. """
+
+    status_item('Backup directory')
+    status_result(config.backup_dir)
+
+    status_item('Validating')
+    if not os.path.exists(config.backup_dir):
+        status_result('DOES NOT EXIST', 3)
+        return 1
+
+    return 0
 
 def print_header(activity):
     """ Display the start time of the activity and return the it for later
@@ -42,7 +59,27 @@ def print_footer(activity, time_init):
     print '*' * 79
 
 def status_item(item):
-    sys.stdout.write('%22s: ' % item)
+    sys.stdout.write('%26s: ' % item)
 
-def status_result(result):
-    print result
+def status_result(result, type=0):
+    """ Show the results of the item currently being worked on.  Optionally,
+    show a color-coded result based on the type parameter where 0 is normal,
+    1 is success (green), 2 is warning (yellow), and 3 is error (red). """
+    if type == 0:
+        print result
+    elif type == 1:
+        print '\033[92m',
+        print result,
+        print '\033[0m'
+    elif type == 2:
+        print '\033[93m',
+        print result,
+        print '\033[0m'
+    elif type == 3:
+        print '\033[91m',
+        print result,
+        print '\033[0m'
+    else:
+        print '\033[91m',
+        print 'INVALID status_result() type specified'
+        print '\033[0m'
