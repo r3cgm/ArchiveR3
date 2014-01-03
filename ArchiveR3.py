@@ -41,7 +41,6 @@ def config_validate(config):
             if os.path.exists(config.backup_dir):
                 status_result('CREATED', 1)
         else:
-            status_result('ABORT', 3)
             return 1
 
     return 0
