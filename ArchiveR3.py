@@ -68,18 +68,10 @@ def status_result(result, type=0):
     if type == 0:
         print result
     elif type == 1:
-        print '\033[92m',
-        print result,
-        print '\033[0m'
+        print '\033[32m' + result + '\033[0m'
     elif type == 2:
-        print '\033[93m',
-        print result,
-        print '\033[0m'
+        print '\033[33m' + result + '\033[0m'
     elif type == 3:
-        print '\033[91m',
-        print result,
-        print '\033[0m'
+        print '\033[31m' + result + '\033[0m'
     else:
-        print '\033[91m',
-        print 'INVALID status_result() type specified'
-        print '\033[0m'
+        print '\033[31mINVALID status_result() type specified\033[0m'
