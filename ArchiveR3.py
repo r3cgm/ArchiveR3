@@ -42,6 +42,16 @@ def config_validate(config):
                 status_result('CREATED', 1)
         else:
             return 1
+    else:
+        status_result('PASS', 1)
+
+    status_item('Directory')
+    if not os.path.isdir(config.backup_dir):
+        status_result('NO', 2)
+        return 1
+    else:
+        status_result('PASS', 1)
+
 
     return 0
 
