@@ -49,13 +49,11 @@ class backup:
         self.args_process()
         time_init = print_header('backup')
         self.config = config_read()
-        status_item('Configuration')
-        status_result('validating')
         if config_validate(self.config):
-            status_item('Configuration validation')
+            status_item('Configuration')
             status_result('FAILED', 3)
         else:
-            status_item('Configuration validation')
+            status_item('Configuration')
             status_result('SUCCESS', 1)
             self.backup()
         print_footer('backup', time_init)
