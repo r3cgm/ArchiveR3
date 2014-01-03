@@ -12,7 +12,10 @@ def config_read():
     config.read('config')
 
     config.archives = config.get('ArchiveR3', 'archives')
+
     config.backup_dir = config.get('ArchiveR3', 'backup_dir')
+    config.backup_dir = normalize_dir(config.backup_dir)
+
     config.log_dir = config.get('ArchiveR3', 'log_dir')
     config.data_dir = config.get('ArchiveR3', 'data_dir')
     config.stale_age = config.getint('ArchiveR3', 'stale_age')
@@ -24,15 +27,23 @@ def config_validate(config):
     """ Make sure that all the configuration settings make sense.  Try to
     be helpful and intervene if there are issues, otherwise bail. """
 
-    status_item('Backup directory')
+    status_item('Backup location')
     status_result(config.backup_dir)
 
-    status_item('Validating')
+    status_item('Exists')
     if not os.path.exists(config.backup_dir):
-        status_result('DOES NOT EXIST', 3)
+        status_result('NO', 2)
         return 1
 
     return 0
+
+def normalize_dir(dir):
+    """ Add a trailing slash to a directory if none is present.  We need to
+    ensure consistency here in order to have pathing work out for rsync calls
+    etc. """
+    if dir[-1] != '/':
+        dir += '/'
+    return dir
 
 def print_header(activity):
     """ Display the start time of the activity and return the it for later
