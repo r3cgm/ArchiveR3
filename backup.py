@@ -60,5 +60,11 @@ class backup:
 
 
 if __name__ == '__main__':
-    backup = backup()
-    backup.main()
+    try:
+        backup = backup()
+        backup.main()
+    except KeyboardInterrupt:
+        print
+        status_item('Safe Quit')
+        status_result('SUCCESS', 1)
+        pass

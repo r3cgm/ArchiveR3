@@ -33,7 +33,16 @@ def config_validate(config):
     status_item('Exists')
     if not os.path.exists(config.backup_dir):
         status_result('NO', 2)
-        return 1
+        status_item('Create? (y/n)')
+        confirm_create = raw_input()
+        if confirm_create == 'y':
+            status_item('mkdir ' + config.backup_dir)
+            os.makedirs(config.backup_dir)
+            if os.path.exists(config.backup_dir):
+                status_result('CREATED', 1)
+        else:
+            status_result('ABORT', 3)
+            return 1
 
     return 0
 
@@ -52,7 +61,7 @@ def print_header(activity):
     print '*' * 79
     print
     print 'START: ' + activity + ' - ' + \
-        time.strftime("%B %d, %Y %H:%M:%S", time.localtime(time_init))
+        time.strftime("%B %-d, %Y %H:%M:%S", time.localtime(time_init))
     print
     print '*' * 79
     return time_init
@@ -62,7 +71,7 @@ def print_footer(activity, time_init):
     print '*' * 79
     print
     print 'END: ' + activity + ' - ' + \
-          time.strftime("%B %d, %Y %H:%M:%S", time.localtime(time_final))
+          time.strftime("%B %-d, %Y %H:%M:%S", time.localtime(time_final))
     print
     status_item('elapsed')
     status_result(str(int(time_final - time_init)) + ' seconds')
@@ -70,7 +79,7 @@ def print_footer(activity, time_init):
     print '*' * 79
 
 def status_item(item):
-    sys.stdout.write('%26s: ' % item)
+    sys.stdout.write('%38s: ' % item)
 
 def status_result(result, type=0):
     """ Show the results of the item currently being worked on.  Optionally,
