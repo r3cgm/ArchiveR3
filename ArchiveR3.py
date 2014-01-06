@@ -6,6 +6,33 @@ import sys
 import time
 
 
+def dir_check_make(dir):
+    """ Check for the existence of a given directory, and if not found prompt
+    the user to create it.  Return 1 if the directory does not exist or the
+    user decides not to create it. """
+    status_item('Exists')
+    if not os.path.exists(dir):
+        status_result('NO', 2)
+        status_item('Create? (y/n)')
+        confirm_create = raw_input()
+        if confirm_create == 'y':
+            status_item('mkdir ' + dir)
+            os.makedirs(dir)
+            if os.path.exists(dir):
+                status_result('CREATED', 1)
+            # no need to verify success here, we do it below
+        else:
+            return 1
+    else:
+        status_result('PASS', 1)
+
+    status_item('Directory')
+    if not os.path.isdir(dir):
+        status_result('NO', 2)
+        return 1
+    else:
+        status_result('PASS', 1)
+
 def config_read(config_file):
     """ Read the configuration. """
     if not os.path.isfile(config_file):
@@ -33,28 +60,9 @@ def config_validate(config):
     status_item('Backup location')
     status_result(config.backup_dir)
 
-    status_item('Exists')
-    if not os.path.exists(config.backup_dir):
-        status_result('NO', 2)
-        status_item('Create? (y/n)')
-        confirm_create = raw_input()
-        if confirm_create == 'y':
-            status_item('mkdir ' + config.backup_dir)
-            os.makedirs(config.backup_dir)
-            if os.path.exists(config.backup_dir):
-                status_result('CREATED', 1)
-        else:
-            return 1
-    else:
-        status_result('PASS', 1)
-
-    status_item('Directory')
-    if not os.path.isdir(config.backup_dir):
-        status_result('NO', 2)
+    rc = dir_check_make(config.backup_dir)
+    if rc:
         return 1
-    else:
-        status_result('PASS', 1)
-
 
     return 0
 
