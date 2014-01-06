@@ -48,14 +48,21 @@ class backup:
         """ If you call the python as a script, this is what gets executed. """
         self.args_process()
         time_init = print_header('backup')
-        self.config = config_read()
-        if config_validate(self.config):
-            status_item('Config validate')
-            status_result('FAILED', 3)
-        else:
-            status_item('Config validate')
+        status_item('Config \'' + self.args.config + '\'')
+
+        self.config = config_read(self.args.config)
+        if self.config:
             status_result('SUCCESS', 1)
-            self.backup()
+            if config_validate(self.config):
+                status_item('Config validate')
+                status_result('FAILED', 3)
+            else:
+                status_item('Config validate')
+                status_result('SUCCESS', 1)
+                self.backup()
+        else:
+            status_result('FAILED', 3)
+
         print_footer('backup', time_init)
 
 

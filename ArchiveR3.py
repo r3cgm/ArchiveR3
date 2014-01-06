@@ -6,10 +6,13 @@ import sys
 import time
 
 
-def config_read():
+def config_read(config_file):
     """ Read the configuration. """
+    if not os.path.isfile(config_file):
+        return
+
     config = ConfigParser.RawConfigParser()
-    config.read('config')
+    config.read(config_file)
 
     config.archives = config.get('ArchiveR3', 'archives')
 
