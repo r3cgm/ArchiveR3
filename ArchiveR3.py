@@ -6,6 +6,22 @@ import sys
 import time
 
 
+def dir_check(dir):
+    """ Check for the existence of a given directory.  Return 1 if the
+    directory does not exist. """
+    status_item('Exists')
+    if not os.path.exists(dir):
+        status_result('FAIL', 3)
+    else:
+        status_result('PASS', 1)
+
+    status_item('Directory')
+    if not os.path.isdir(dir):
+        status_result('FAIL', 3)
+        return 1
+    else:
+        status_result('PASS', 1)
+
 def dir_check_make(dir):
     """ Check for the existence of a given directory, and if not found prompt
     the user to create it.  Return 1 if the directory does not exist or the
@@ -28,7 +44,7 @@ def dir_check_make(dir):
 
     status_item('Directory')
     if not os.path.isdir(dir):
-        status_result('NO', 2)
+        status_result('FAIL', 3)
         return 1
     else:
         status_result('PASS', 1)
@@ -41,10 +57,9 @@ def config_read(config_file):
     config = ConfigParser.RawConfigParser()
     config.read(config_file)
 
-    config.archives = config.get('ArchiveR3', 'archives')
+    config.backup_dir = normalize_dir(config.get('ArchiveR3', 'backup_dir'))
 
-    config.backup_dir = config.get('ArchiveR3', 'backup_dir')
-    config.backup_dir = normalize_dir(config.backup_dir)
+    config.archives = config.get('ArchiveR3', 'archives')
 
     config.log_dir = config.get('ArchiveR3', 'log_dir')
     config.data_dir = config.get('ArchiveR3', 'data_dir')
