@@ -12,6 +12,7 @@ def dir_check(dir):
     status_item('Exists')
     if not os.path.exists(dir):
         status_result('FAIL', 3)
+        return 1
     else:
         status_result('PASS', 1)
 
@@ -56,16 +57,12 @@ def config_read(config_file):
 
     config = ConfigParser.RawConfigParser()
     config.read(config_file)
-
     config.backup_dir = normalize_dir(config.get('ArchiveR3', 'backup_dir'))
-
-    config.archives = config.get('ArchiveR3', 'archives')
-
-    config.log_dir = config.get('ArchiveR3', 'log_dir')
-    config.data_dir = config.get('ArchiveR3', 'data_dir')
+    config.archives = normalize_dir(config.get('ArchiveR3', 'archives'))
+    config.data_dir = normalize_dir(config.get('ArchiveR3', 'data_dir'))
+    config.log_dir = normalize_dir(config.get('ArchiveR3', 'log_dir'))
     config.stale_age = config.getint('ArchiveR3', 'stale_age')
     config.password_base = config.get('ArchiveR3', 'password_base')
-
     return config
 
 def config_validate(config):
@@ -74,10 +71,36 @@ def config_validate(config):
 
     status_item('Backup location')
     status_result(config.backup_dir)
-
     rc = dir_check_make(config.backup_dir)
     if rc:
         return 1
+
+    config.archive_list = config.archives.split()
+    for i, s in enumerate(config.archive_list):
+        status_item('Archive')
+        config.archive_list[i] = normalize_dir(s)
+        status_result(config.archive_list[i])
+        rc = dir_check(config.archives[i])
+        if rc:
+            return 1
+
+    status_item('Data location')
+    status_result(config.data_dir)
+    rc = dir_check_make(config.data_dir)
+    if rc:
+        return 1
+
+    status_item('Log location')
+    status_result(config.log_dir)
+    rc = dir_check_make(config.log_dir)
+    if rc:
+        return 1
+
+    status_item('Password base')
+    status_result('****************')
+
+    status_item('Stale age (minutes)')
+    status_result(config.stale_age)
 
     return 0
 
