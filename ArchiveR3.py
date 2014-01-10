@@ -28,13 +28,31 @@ def dir_validate(dir, create=0, write_test=0):
                     return 1
 
     if os.path.isdir(dir):
-        status_result('DIRECTORY', 1)
+        status_result('DIRECTORY', 1, no_newline=1)
     else:
         status_result('NOT A DIRECTORY', 3)
         return 1
 
     if write_test:
-        print 'here is where we perform a write test'
+        test_file = '.ArchiveR3-write-test'
+        if os.path.exists(dir + test_file):
+            status_result('CRUFT', 3)
+            status_item('')
+            status_result('REMOVE MANUALLY', 2)
+            status_item('')
+            status_result(dir + test_file, 2)
+            return 1
+        file = open(dir + test_file, 'w')
+        file.write('test write')
+        file.close()
+        if os.path.isfile(dir + test_file):
+            os.remove(dir + test_file)
+            status_result('WRITEABLE', 1, no_newline=1)
+        else:
+            status_result('NOT WRITEABLE', 3)
+            return 1
+
+    status_result('')
 
 def config_read(config_file):
     """ Read the configuration. """
@@ -56,7 +74,7 @@ def config_validate(config):
     be helpful and intervene if there are issues, otherwise bail. """
 
     status_item('To ' + config.backup_dir)
-    rc = dir_validate(config.backup_dir, create=1)
+    rc = dir_validate(config.backup_dir, create=1, write_test=1)
     if rc:
         return 1
 
@@ -73,7 +91,7 @@ def config_validate(config):
     if rc:
         return 1
 
-    status_item('Log ' + config.log_dir)
+    status_item('Logs ' + config.log_dir)
     rc = dir_validate(config.log_dir, create=1)
     if rc:
         return 1
