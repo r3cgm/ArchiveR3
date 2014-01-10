@@ -6,11 +6,11 @@ import sys
 import time
 
 
-def dir_validate(dir, create=0, write_test=0):
+def dir_validate(dir, create=0, write=0, read=0):
     """ Validate that a directory exists.  Optionally specify create=1 to
-    prompt the user to create it.  Specify write_test=1 if there should be an
-    attempt to create (and subsequently remove) a test file.  Return 1 if no
-    valid directory exists at the end of this function. """
+    prompt the user to create it.  Specify write=1 to create (and remove) a
+    test file.  Specify read=0 to read any random file from the directory.
+    Return 1 if no valid directory exists at the end of this function. """
     if os.path.exists(dir):
         status_result('FOUND', 1, no_newline=1)
     else:
@@ -33,7 +33,7 @@ def dir_validate(dir, create=0, write_test=0):
         status_result('NOT A DIRECTORY', 3)
         return 1
 
-    if write_test:
+    if write:
         test_file = '.ArchiveR3-write-test'
         if os.path.exists(dir + test_file):
             status_result('CRUFT', 3)
@@ -51,6 +51,18 @@ def dir_validate(dir, create=0, write_test=0):
         else:
             status_result('NOT WRITEABLE', 3)
             return 1
+
+    if read:
+        for root, dirs, files in os.walk(dir):
+            for filename in files:
+                file = open(dir + filename, 'r')
+                test_byte = file.read(1)
+                if test_byte:
+                    status_result('READABLE', 1, no_newline=1)
+                else:
+                    status_result('NOT READABLE', 3)
+                    return 1
+                break
 
     status_result('')
 
@@ -74,7 +86,7 @@ def config_validate(config):
     be helpful and intervene if there are issues, otherwise bail. """
 
     status_item('To ' + config.backup_dir)
-    rc = dir_validate(config.backup_dir, create=1, write_test=1)
+    rc = dir_validate(config.backup_dir, create=1, write=1)
     if rc:
         return 1
 
@@ -82,17 +94,17 @@ def config_validate(config):
     for i, s in enumerate(config.archive_list):
         config.archive_list[i] = normalize_dir(s)
         status_item('From ' + config.archive_list[i])
-        rc = dir_validate(config.archive_list[i])
+        rc = dir_validate(config.archive_list[i], read=1)
         if rc:
             return 1
 
     status_item('Data ' + config.data_dir)
-    rc = dir_validate(config.data_dir, create=1)
+    rc = dir_validate(config.data_dir, create=1, write=1)
     if rc:
         return 1
 
     status_item('Logs ' + config.log_dir)
-    rc = dir_validate(config.log_dir, create=1)
+    rc = dir_validate(config.log_dir, create=1, write=1)
     if rc:
         return 1
 
