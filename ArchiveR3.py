@@ -28,9 +28,9 @@ def dir_validate(dir, create=0, write_test=0):
                     return 1
 
     if os.path.isdir(dir):
-        status_result(' DIRECTORY', 1)
+        status_result('DIRECTORY', 1)
     else:
-        status_result(' NOT A DIRECTORY', 3)
+        status_result('NOT A DIRECTORY', 3)
         return 1
 
     if write_test:
@@ -55,7 +55,7 @@ def config_validate(config):
     """ Make sure that all the configuration settings make sense.  Try to
     be helpful and intervene if there are issues, otherwise bail. """
 
-    status_item('Backup to ' + config.backup_dir)
+    status_item('To ' + config.backup_dir)
     rc = dir_validate(config.backup_dir, create=1)
     if rc:
         return 1
@@ -63,17 +63,17 @@ def config_validate(config):
     config.archive_list = config.archives.split()
     for i, s in enumerate(config.archive_list):
         config.archive_list[i] = normalize_dir(s)
-        status_item('Archive ' + config.archive_list[i])
+        status_item('From ' + config.archive_list[i])
         rc = dir_validate(config.archive_list[i])
         if rc:
             return 1
 
-    status_item('Data location ' + config.data_dir)
+    status_item('Data ' + config.data_dir)
     rc = dir_validate(config.data_dir, create=1)
     if rc:
         return 1
 
-    status_item('Log location ' + config.log_dir)
+    status_item('Log ' + config.log_dir)
     rc = dir_validate(config.log_dir, create=1)
     if rc:
         return 1

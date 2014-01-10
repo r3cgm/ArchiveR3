@@ -52,7 +52,7 @@ class backup:
 
         self.config = config_read(self.args.config)
         if self.config:
-            status_result('PASS', 1)
+            status_result('LOADED', 1)
             if config_validate(self.config):
                 status_item('Config validate')
                 status_result('FAILED', 3)
