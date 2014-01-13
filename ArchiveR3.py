@@ -11,9 +11,7 @@ def dir_validate(dir, create=0, write=0, read=0):
     prompt the user to create it.  Specify write=1 to create (and remove) a
     test file.  Specify read=0 to read any random file from the directory.
     Return 1 if no valid directory exists at the end of this function. """
-    if os.path.exists(dir):
-        status_result('FOUND', 1, no_newline=1)
-    else:
+    if not os.path.exists(dir):
         if create:
             status_result('NOT FOUND ', 2)
             status_item('Create? (y/n)')
@@ -27,9 +25,7 @@ def dir_validate(dir, create=0, write=0, read=0):
                     status_result('FAILED', 3)
                     return 1
 
-    if os.path.isdir(dir):
-        status_result('DIRECTORY', 1, no_newline=1)
-    else:
+    if not os.path.isdir(dir):
         status_result('NOT A DIRECTORY', 3)
         return 1
 
