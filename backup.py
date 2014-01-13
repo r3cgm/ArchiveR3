@@ -41,8 +41,11 @@ class backup:
         self.args = parser.parse_args()
 
     def backup(self):
-        status_item('Performing backups now')
-        status_result('TBD')
+        for i, s in enumerate(self.config.archive_list):
+            status_item(self.config.archive_list[i])
+            status_result('ARCHIVING', 1)
+
+            arc_file = self.config.archive_list[i].split('/')[-2] + '.archive'
 
     def main(self):
         """ If you call the python as a script, this is what gets executed. """
@@ -54,14 +57,14 @@ class backup:
         if self.config:
             status_result('LOADED', 1)
             if config_validate(self.config):
-                status_item('Config validate')
-                status_result('FAILED', 3)
+                status_item('Configuration')
+                status_result('VALIDATION FAILED', 3)
             else:
-                status_item('Config validate')
-                status_result('SUCCESS', 1)
+                status_item('Configuration')
+                status_result('VALIDATED', 1)
                 self.backup()
         else:
-            status_result('PASS', 3)
+            status_result('NOT FOUND', 3)
 
         print_footer('backup', time_init)
 
