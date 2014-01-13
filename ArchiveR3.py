@@ -81,7 +81,7 @@ def config_validate(config):
     """ Make sure that all the configuration settings make sense.  Try to
     be helpful and intervene if there are issues, otherwise bail. """
 
-    status_item('To ' + config.backup_dir)
+    status_item(config.backup_dir)
     rc = dir_validate(config.backup_dir, create=1, write=1)
     if rc:
         return 1
@@ -89,17 +89,17 @@ def config_validate(config):
     config.archive_list = config.archives.split()
     for i, s in enumerate(config.archive_list):
         config.archive_list[i] = normalize_dir(s)
-        status_item('From ' + config.archive_list[i])
+        status_item(config.archive_list[i])
         rc = dir_validate(config.archive_list[i], read=1)
         if rc:
             return 1
 
-    status_item('Data ' + config.data_dir)
+    status_item(config.data_dir)
     rc = dir_validate(config.data_dir, create=1, write=1)
     if rc:
         return 1
 
-    status_item('Logs ' + config.log_dir)
+    status_item(config.log_dir)
     rc = dir_validate(config.log_dir, create=1, write=1)
     if rc:
         return 1
@@ -143,6 +143,9 @@ def print_footer(activity, time_init):
     status_result(str(int(time_final - time_init)) + ' seconds')
     print
     print '*' * 79
+
+def section_break():
+    print '-' * 79
 
 def status_item(item):
     sys.stdout.write('%38s: ' % item)
