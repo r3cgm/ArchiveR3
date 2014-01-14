@@ -45,11 +45,17 @@ class backup:
             arc_dir = self.config.backup_dir
             arc_file = self.config.archive_list[i].split('/')[-2] + '.archive'
             arc = arc_dir + arc_file
-            status_item(arc)
+            status_item(arc_file)
             if os.path.isfile(arc):
                 status_result('FOUND', 1)
             else:
                 status_result('NOT FOUND', 2)
+                status_item('Create? (y/n)')
+                confirm_create = raw_input()
+                if confirm_create == 'y':
+                    print 'creating archive'
+                else:
+                    return 1
 
     def main(self):
         """ If you call the python as a script, this is what gets executed. """
@@ -67,7 +73,12 @@ class backup:
                 status_item('Configuration')
                 status_result('VALIDATED', 1)
                 section_break()
-                self.backup()
+                rc = self.backup()
+                status_item('Backup')
+                if rc == 1:
+                    status_result('FAILED', 3)
+                else:
+                    status_result('SUCCESS', 1)
         else:
             status_result('NOT FOUND', 3)
 
