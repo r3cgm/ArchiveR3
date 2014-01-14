@@ -117,7 +117,7 @@ def config_validate(config):
     """ Make sure that all the configuration settings make sense.  Try to
     be helpful and intervene if there are issues, otherwise bail. """
 
-    status_item(config.backup_dir)
+    status_item('Target ' + config.backup_dir)
     rc = dir_validate(config.backup_dir, create=1, write=1)
     if rc:
         return 1
@@ -125,17 +125,17 @@ def config_validate(config):
     config.archive_list = config.archives.split()
     for i, s in enumerate(config.archive_list):
         config.archive_list[i] = normalize_dir(s)
-        status_item(config.archive_list[i])
+        status_item('Archive ' + config.archive_list[i])
         rc = dir_validate(config.archive_list[i], read=1)
         if rc:
             return 1
 
-    status_item(config.data_dir)
+    status_item('Data ' + config.data_dir)
     rc = dir_validate(config.data_dir, create=1, write=1)
     if rc:
         return 1
 
-    status_item(config.log_dir)
+    status_item('Log ' + config.log_dir)
     rc = dir_validate(config.log_dir, create=1, write=1)
     if rc:
         return 1
