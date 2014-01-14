@@ -6,6 +6,19 @@ import sys
 import time
 
 
+class Unbuffered:
+    """ Provide a means to display stdout without buffering it. """
+    def __init__(self, stream):
+        self.stream = stream
+
+    def write(self, data):
+        self.stream.write(data)
+        self.stream.flush()
+
+    def __getattr__(self, attr):
+        return getattr(self.stream, attr)
+
+
 def dir_size(dir, block_size=0):
     """ Calculate the size of a directory by recursively adding up the size of
     all files within, recursively.  This does not double-count any symlinks or
