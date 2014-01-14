@@ -42,6 +42,8 @@ class backup:
 
     def backup(self):
         for i, s in enumerate(self.config.archive_list):
+            status_item('Backing Up')
+            status_result(self.config.backup_dir)
             arc_dir = self.config.backup_dir
             arc_file = self.config.archive_list[i].split('/')[-2] + '.archive'
             arc = arc_dir + arc_file
@@ -53,7 +55,9 @@ class backup:
                 status_item('Create? (y/n)')
                 confirm_create = raw_input()
                 if confirm_create == 'y':
-                    print 'creating archive'
+                    status_item('Source size')
+                    arc_size = dir_size(self.config.archive_list[i])
+                    status_result(arc_size)
                 else:
                     return 1
 

@@ -6,6 +6,31 @@ import sys
 import time
 
 
+def dir_size(dir):
+    """ Calculate the size of a directory by recursively adding up the size of
+    all files within, recursively.  This does not double-count any symlinks or
+    hard links. """
+    total_size = 0
+    seen = {}
+    for dirpath, dirnames, filenames in os.walk(dir):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            try:
+                stat = os.stat(fp)
+            except OSError:
+                continue
+
+            try:
+                seen[stat.st_ino]
+            except KeyError:
+                seen[stat.st_ino] = True
+            else:
+                continue
+            total_size += stat.st_size
+
+    return total_size
+
+
 def dir_validate(dir, create=0, write=0, read=0):
     """ Validate that a directory exists.  Optionally specify create=1 to
     prompt the user to create it.  Specify write=1 to create (and remove) a
@@ -62,6 +87,7 @@ def dir_validate(dir, create=0, write=0, read=0):
 
     status_result('')
 
+
 def config_read(config_file):
     """ Read the configuration. """
     if not os.path.isfile(config_file):
@@ -76,6 +102,7 @@ def config_read(config_file):
     config.stale_age = config.getint('ArchiveR3', 'stale_age')
     config.password_base = config.get('ArchiveR3', 'password_base')
     return config
+
 
 def config_validate(config):
     """ Make sure that all the configuration settings make sense.  Try to
@@ -112,6 +139,7 @@ def config_validate(config):
 
     return 0
 
+
 def normalize_dir(dir):
     """ Add a trailing slash to a directory if none is present.  We need to
     ensure consistency here in order to have pathing work out for rsync calls
@@ -119,6 +147,7 @@ def normalize_dir(dir):
     if dir[-1] != '/':
         dir += '/'
     return dir
+
 
 def print_header(activity):
     """ Display the start time of the activity and return the it for later
@@ -132,6 +161,7 @@ def print_header(activity):
     print '*' * 79
     return time_init
 
+
 def print_footer(activity, time_init):
     time_final = time.time()
     print '*' * 79
@@ -144,11 +174,14 @@ def print_footer(activity, time_init):
     print
     print '*' * 79
 
+
 def section_break():
     print '-' * 79
 
+
 def status_item(item):
     sys.stdout.write('%38s: ' % item)
+
 
 def status_result(result, type=0, no_newline=0):
     """ Show the results of the item currently being worked on.  Optionally,
