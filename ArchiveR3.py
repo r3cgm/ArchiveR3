@@ -144,8 +144,13 @@ def config_validate(config):
     status_result('****************')
 
     status_item('Stale age (minutes)')
-    status_result(config.stale_age)
+    status_result(str(config.stale_age) + ' !UNUSED!')
 
+    status_item('Provision Capacity Percent')
+    status_result(config.provision_capacity_percent)
+
+    status_item('Provision Capacity Reprocivision')
+    status_result(config.provision_capacity_reprovision)
     return 0
 
 
