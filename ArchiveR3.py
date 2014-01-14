@@ -6,10 +6,11 @@ import sys
 import time
 
 
-def dir_size(dir):
+def dir_size(dir, block_size=0):
     """ Calculate the size of a directory by recursively adding up the size of
     all files within, recursively.  This does not double-count any symlinks or
-    hard links. """
+    hard links.  Optionally specify a blocksize so that file sizes will be
+    padded and more accurately represent actual consumed size on disk. """
     total_size = 0
     seen = {}
     for dirpath, dirnames, filenames in os.walk(dir):
@@ -26,7 +27,11 @@ def dir_size(dir):
                 seen[stat.st_ino] = True
             else:
                 continue
-            total_size += stat.st_size
+            if block_size:
+                total_size += stat.st_size - (stat.st_size % block_size) + \
+                    block_size
+            else:
+                total_size += stat.st_size
 
     return total_size
 

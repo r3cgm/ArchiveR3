@@ -58,6 +58,10 @@ class backup:
                     status_item('Source size')
                     arc_size = dir_size(self.config.archive_list[i])
                     status_result(arc_size)
+                    status_item('Source size (512 byte blocks)')
+                    arc_size = dir_size(self.config.archive_list[i], \
+                        block_size = 512)
+                    status_result(arc_size)
                 else:
                     return 1
 
