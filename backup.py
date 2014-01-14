@@ -1,12 +1,21 @@
-#!/bin/sh
-''''exec python -u -- "$0" ${1+"$@"} # '''
-
-# special shebang avoids output buffering
+#!/usr/bin/env python
 
 from ArchiveR3 import *
 import argparse
 from hurry.filesize import size
 import sys
+
+
+class Unbuffered:
+    def __init__(self, stream):
+        self.stream = stream
+
+    def write(self, data):
+        self.stream.write(data)
+        self.stream.flush()
+
+    def __getattr__(self, attr):
+        return getattr(self.stream, attr)
 
 
 class backup:
@@ -65,7 +74,7 @@ class backup:
                 confirm_create = raw_input()
                 if confirm_create == 'y':
                     self.create_archive(self.config.archive_list[i],
-                        self.config.backup_dir)
+                                        self.config.backup_dir)
                 else:
                     return 1
 
@@ -98,6 +107,8 @@ class backup:
 
 
 if __name__ == '__main__':
+    sys.stdout = Unbuffered(sys.stdout)
+
     try:
         backup = backup()
         backup.main()
