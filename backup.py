@@ -50,18 +50,21 @@ class backup:
             sys.exit(1)
         self.args = parser.parse_args()
 
-    def create_archive(self, archive_dir, backup_dir):
-        status_item('Source size')
-        arc_size = dir_size(archive_dir)
-        status_result(str(arc_size) + ' (' + size(arc_size) + ')')
-        status_item('Source size (512 byte blocks)')
-        arc_block = dir_size(archive_dir, block_size=512)
-        status_result(str(arc_block) + ' (' + size(arc_block) + ')')
+    def create_archive(self, archive_dir, backup_dir, arc_block):
+        archive_size = int(arc_block / \
+                           self.config.provision_capacity_percent * 100)
+        status_item('Required Archive Size')
+        status_result(str(archive_size) + ' (' + size(archive_size) + ')')
 
     def backup(self):
         for i, s in enumerate(self.config.archive_list):
+            archive_dir = self.config.archive_list[i]
             status_item('Backing Up')
-            status_result(self.config.backup_dir)
+            status_result(archive_dir)
+            status_item('Source size (512 byte blocks)')
+            arc_block = dir_size(archive_dir, block_size=512)
+            status_result(str(arc_block) + ' (' + size(arc_block) + ')')
+
             arc_dir = self.config.backup_dir
             arc_file = self.config.archive_list[i].split('/')[-2] + '.archive'
             arc = arc_dir + arc_file
@@ -74,7 +77,7 @@ class backup:
                 confirm_create = raw_input()
                 if confirm_create == 'y':
                     self.create_archive(self.config.archive_list[i],
-                                        self.config.backup_dir)
+                                        self.config.backup_dir, arc_block)
                 else:
                     return 1
 
