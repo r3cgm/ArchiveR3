@@ -5,3 +5,5 @@ data_dir: /tmp/ArchiveR3/data/
 log_dir: /tmp/ArchiveR3/logs/
 password_base: password
 stale_age: 86400
+provision_capacity_percent: 50
+provision_capacity_reprovision: 90
