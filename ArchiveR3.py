@@ -104,8 +104,12 @@ def config_read(config_file):
     config.archives = normalize_dir(config.get('ArchiveR3', 'archives'))
     config.data_dir = normalize_dir(config.get('ArchiveR3', 'data_dir'))
     config.log_dir = normalize_dir(config.get('ArchiveR3', 'log_dir'))
-    config.stale_age = config.getint('ArchiveR3', 'stale_age')
     config.password_base = config.get('ArchiveR3', 'password_base')
+    config.stale_age = config.getint('ArchiveR3', 'stale_age')
+    config.provision_capacity_percent = \
+        config.getint('ArchiveR3', 'provision_capacity_percent')
+    config.provision_capacity_reprovision = \
+        config.getint('ArchiveR3', 'provision_capacity_reprovision')
     return config
 
 

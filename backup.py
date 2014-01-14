@@ -5,6 +5,7 @@
 
 from ArchiveR3 import *
 import argparse
+from hurry.filesize import size
 import sys
 
 
@@ -57,11 +58,12 @@ class backup:
                 if confirm_create == 'y':
                     status_item('Source size')
                     arc_size = dir_size(self.config.archive_list[i])
-                    status_result(arc_size)
+                    status_result(str(arc_size) + ' (' + size(arc_size) + ')')
                     status_item('Source size (512 byte blocks)')
-                    arc_size = dir_size(self.config.archive_list[i], \
-                        block_size = 512)
-                    status_result(arc_size)
+                    arc_block = dir_size(self.config.archive_list[i],
+                                         block_size=512)
+                    status_result(str(arc_block) + ' (' + size(arc_block) +
+                                  ')')
                 else:
                     return 1
 
