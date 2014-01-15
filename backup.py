@@ -3,6 +3,8 @@
 from ArchiveR3 import *
 import argparse
 from hurry.filesize import size
+import re
+import subprocess
 import sys
 
 
@@ -39,12 +41,34 @@ class backup:
         self.args = parser.parse_args()
 
     def create_archive(self, archive_dir, archive, backup_dir, arc_block):
-        archive_size = int(arc_block / \
+        """ Create an encrypted archive.  Return 1 if any problems or 0 for
+        success. """
+        archive_size = int(arc_block /
                            self.config.provision_capacity_percent * 100)
+        archive_size_m = int(archive_size / 1024 / 1024)
         status_item('Required Archive Size')
         status_result(str(archive_size) + ' (' + size(archive_size) + ')')
-        status_item('Creating Archive')
+        status_item('Archive File')
         status_result(backup_dir + archive)
+        status_item('Generating Container')
+        status_result('IN PROGRESS', 2)
+        try:
+            subprocess.check_call('dd if=/dev/zero bs=1048576 status=none ' +
+                                  'count=' + str(archive_size_m) +
+                                  ' | pv -s ' + str(archive_size) + ' | ' +
+                                  'dd status=none ' +
+                                  'of=' + backup_dir + archive, shell=True)
+        except subprocess.CalledProcessError, e:
+            status_item('Generation Result')
+            status_result('FAILED: ' + str(e), 3)
+            return 1
+        except Exception, e:
+            status_item('Generation Result')
+            print e
+            if re.match('.*No such file or directory', str(e)):
+                status_result('COMMAND NOT FOUND', 3)
+                return 1
+        return 0
 
     def backup(self):
         for i, s in enumerate(self.config.archive_list):
@@ -66,10 +90,14 @@ class backup:
                 status_item('Create? (y/n)')
                 confirm_create = raw_input()
                 if confirm_create == 'y':
-                    self.create_archive(self.config.archive_list[i], arc_file,
-                                        self.config.backup_dir, arc_block)
+                    rc = self.create_archive(self.config.archive_list[i],
+                                             arc_file, self.config.backup_dir,
+                                             arc_block)
+                    if rc:
+                        return 1
                 else:
                     return 1
+        return 0
 
     def main(self):
         """ If you call the python as a script, this is what gets executed. """

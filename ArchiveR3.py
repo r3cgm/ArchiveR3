@@ -196,7 +196,7 @@ def print_footer(activity, time_init):
     print 'END: ' + activity + ' - ' + \
           time.strftime("%B %-d, %Y %H:%M:%S", time.localtime(time_final))
     print
-    status_item('elapsed')
+    status_item('Elapsed Time')
     status_result(str(int(time_final - time_init)) + ' seconds')
     print
     print '*' * 79
