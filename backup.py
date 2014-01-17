@@ -91,27 +91,29 @@ class backup:
             arc_block = dir_size(archive_dir, block_size=512)
             status_result(str(arc_block) + ' (' + size(arc_block) + ')')
 
-            arc_dir = self.config.backup_dir
-            arc_file = self.config.archive_list[i].split('/')[-2] + '.archive'
-            arc = arc_dir + arc_file
+            container_dir = self.config.backup_dir
+            container_file = self.config.archive_list[i].split('/')[-2] + \
+                '.archive'
+            container = container_dir + container_file
 
             status_item('Encrypted Container')
-            status_result(arc)
+            status_result(container)
 
             # existence check
 
-            status_item(arc_file)
-            if os.path.isfile(arc):
+            status_item(container_file)
+            if os.path.isfile(container):
                 status_result('FOUND', 1)
             else:
                 status_result('NOT FOUND', 2)
-                rc = self.create_archive(self.config.archive_list[i], arc_file,
-                                         self.config.backup_dir, arc_block)
+                rc = self.create_archive(self.config.archive_list[i],
+                                         container, self.config.backup_dir,
+                                         arc_block)
                 if rc:
                     return 1
 
             status_item('Container Size')
-            archive_size = os.path.getsize(arc)
+            archive_size = os.path.getsize(container)
             status_result(str(archive_size) + ' (' + size(archive_size) + ')')
 
             # capacity check
@@ -129,12 +131,16 @@ class backup:
                 status_result('TBD')
                 return 1
 
-            # mount check
+            # mount point check
 
-            status_item('Mount Point')
-            archive_mount = self.config.mount_dir + arc_file
-            status_result(archive_mount)
-            dir_validate(archive_mount)
+            archive_mount = self.config.mount_dir + container_file
+            status_item('Mount Point ' + archive_mount)
+            dir_validate(archive_mount, create=1, sudo=1)
+
+            # mapper check
+
+            if os.path.isdir('/dev/mapper/' + container_file):
+                print
 
         return 0
 
