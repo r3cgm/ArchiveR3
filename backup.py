@@ -49,32 +49,37 @@ class backup:
         """ Create an encrypted archive.  The resulting archive size is only
         accurate to the nearest megabyte.  Return 1 if any problems or 0 for
         success. """
-        archive_size = int(float(arc_block) /
-                           float(self.config.provision_capacity_percent) * 100)
-        archive_size_m = int(float(archive_size) / 1024 / 1024)
-        status_item('Required Archive Size')
-        status_result(str(archive_size) + ' (' + size(archive_size) + ')')
-        status_item('Archive File')
-        status_result(backup_dir + archive)
-        status_item('Generating Container')
-        status_result('IN PROGRESS', 2)
-        try:
-            subprocess.check_call('dd if=/dev/zero bs=1048576 status=none ' +
-                                  'count=' + str(archive_size_m) +
-                                  ' | pv -s ' + str(archive_size) + ' | ' +
-                                  'dd status=none ' +
-                                  'of=' + backup_dir + archive, shell=True)
-        except subprocess.CalledProcessError, e:
-            status_item('Generation Result')
-            status_result('FAILED: ' + str(e), 3)
-            return 1
-        except Exception, e:
-            status_item('Generation Result')
-            print e
-            if re.match('.*No such file or directory', str(e)):
-                status_result('COMMAND NOT FOUND', 3)
+        status_item('Create? (y/n)')
+        confirm_create = raw_input()
+        if confirm_create == 'y':
+            archive_size = int(float(arc_block) /
+                               float(self.config.provision_capacity_percent) * 100)
+            archive_size_m = int(float(archive_size) / 1024 / 1024)
+            status_item('Required Archive Size')
+            status_result(str(archive_size) + ' (' + size(archive_size) + ')')
+            status_item('Archive File')
+            status_result(backup_dir + archive)
+            status_item('Generating Container')
+            status_result('IN PROGRESS', 2)
+            try:
+                subprocess.check_call('dd if=/dev/zero bs=1048576 status=none ' +
+                                      'count=' + str(archive_size_m) +
+                                      ' | pv -s ' + str(archive_size) + ' | ' +
+                                      'dd status=none ' +
+                                      'of=' + backup_dir + archive, shell=True)
+            except subprocess.CalledProcessError, e:
+                status_item('Generation Result')
+                status_result('FAILED: ' + str(e), 3)
                 return 1
-        return 0
+            except Exception, e:
+                status_item('Generation Result')
+                print e
+                if re.match('.*No such file or directory', str(e)):
+                    status_result('COMMAND NOT FOUND', 3)
+                    return 1
+            return 0
+        else:
+            return 1
 
     def backup(self):
         for i, s in enumerate(self.config.archive_list):
@@ -88,28 +93,26 @@ class backup:
             arc_dir = self.config.backup_dir
             arc_file = self.config.archive_list[i].split('/')[-2] + '.archive'
             arc = arc_dir + arc_file
-            status_item(arc_file)
+            status_item('Archive')
+            status_result(arc)
 
             # existence check
+
+            status_item(arc_file)
             if os.path.isfile(arc):
                 status_result('FOUND', 1)
             else:
                 status_result('NOT FOUND', 2)
-                status_item('Create? (y/n)')
-                confirm_create = raw_input()
-                if confirm_create == 'y':
-                    rc = self.create_archive(self.config.archive_list[i],
-                                             arc_file, self.config.backup_dir,
-                                             arc_block)
-                    if rc:
-                        return 1
-                else:
+                rc = self.create_archive(self.config.archive_list[i], arc_file,
+                                         self.config.backup_dir, arc_block)
+                if rc:
                     return 1
 
-            # size check
-            archive_size = os.path.getsize(arc)
             status_item('Archive Size')
+            archive_size = os.path.getsize(arc)
             status_result(str(archive_size) + ' (' + size(archive_size) + ')')
+
+            # capacity check
 
             status_item('Capacity')
             capacity = float(arc_block) / float(archive_size) * 100
@@ -123,6 +126,8 @@ class backup:
                 status_item('Reprovisioning')
                 status_result('TBD')
                 return 1
+
+            # mount check
 
         return 0
 

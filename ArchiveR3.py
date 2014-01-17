@@ -172,7 +172,7 @@ def config_validate(config):
 
     devnull = open('/dev/null', 'w')
 
-    status_item('Utility dd')
+    status_item('dd')
     try:
         subprocess.check_call(['dd', '--version'], stdout=devnull)
     except subprocess.CalledProcessError, e:
@@ -183,7 +183,7 @@ def config_validate(config):
         return 1
     status_result('FOUND', 1)
 
-    status_item('Utility pv')
+    status_item('pv')
     try:
         subprocess.check_call(['pv', '--version'], stdout=devnull)
     except subprocess.CalledProcessError, e:
@@ -193,6 +193,21 @@ def config_validate(config):
         status_result('NOT FOUND (install package "pv")', 3)
         return 1
     status_result('FOUND', 1)
+
+    status_item('sudo losetup')
+    try:
+        subprocess.check_call(['sudo', 'losetup', '-h'], stdout=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+        return 1
+    status_result('FOUND', 1)
+
+    p1 = subprocess.Popen(['sudo', 'losetup', '-f'], stdout=subprocess.PIPE)
+    output = p1.communicate()[0]
+    print output
 
     return 0
 
