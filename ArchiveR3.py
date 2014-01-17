@@ -166,6 +166,44 @@ def lb_setup(lbdevice, file):
     return 1
 
 
+def lb_encrypted(lbdevice, password_base, container_file):
+    """ Perform tests to determine if the loopback device is a valid
+    encrypted container. """
+    status_item('Crypted Test Password')
+    try:
+        print
+        print
+        # this will need to be adjusted once we are testing with legit
+        # encrypted volumes
+        subprocess.check_call('expect -c "spawn sudo tcplay ' +
+                              '-i -d ' + lbdevice + "\n" +
+                              "set exp_internal 1\n" +
+                              "set timeout 2\n" +
+                              "expect Passphrase\n" +
+                              "send " + password_base +
+                              container_file + '\\r' + "\n" +
+                              "expect Passphrase\n" +
+                              "send " + password_base +
+                              container_file + '\\r' + "\n" +
+                              "expect Passphrase\n" +
+                              "send " + password_base +
+                              container_file + '\\r' + "\n" +
+                              "expect eof\n" +
+                              '"', shell=True)
+        print
+        print
+
+    except subprocess.CalledProcessError, e:
+        status_item('Map Command')
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_item('Map Command')
+        status_result('NOT FOUND', 3)
+        return 1
+
+
+
 def config_read(config_file):
     """ Read the configuration. """
     if not os.path.isfile(config_file):

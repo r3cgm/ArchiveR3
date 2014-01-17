@@ -131,14 +131,6 @@ class backup:
                 status_result('TBD')
                 return 1
 
-            # mount point check
-
-            archive_mount = self.config.mount_dir + container_file
-            status_item('Mount Point ' + archive_mount)
-            rc = dir_validate(archive_mount, create=1, sudo=1)
-            if rc:
-                return 1
-
             # loopback device check
 
             lbdevice = lb_exists(container)
@@ -148,18 +140,34 @@ class backup:
                 if rc:
                     return 1
 
+            # determine if loopback device is encrypted
+
+            rc = lb_encrypted(lbdevice, self.config.password_base,
+                              container_file)
+            if rc:
+                return 1
+
+            # mount point check
+
+            archive_mount = self.config.mount_dir + container_file
+            status_item('Mount Point ' + archive_mount)
+            rc = dir_validate(archive_mount, create=1, sudo=1)
+            if rc:
+                return 1
+
+
             # mapper check
 
-            archive_map = '/dev/mapper/' + container_file
-            status_item('Map ' + archive_map)
-            if os.path.isdir('/dev/mapper/' + container_file):
-                status_result('FOUND', 1)
-            else:
-                status_result('NOT FOUND', 2)
-                rc = map_container(lbdevice, container_file,
-                                   self.config.password_base)
-                if rc:
-                    return 1
+#           archive_map = '/dev/mapper/' + container_file
+#           status_item('Map ' + archive_map)
+#           if os.path.isdir('/dev/mapper/' + container_file):
+#               status_result('FOUND', 1)
+#           else:
+#               status_result('NOT FOUND', 2)
+#               rc = map_container(lbdevice, container_file,
+#                                  self.config.password_base)
+#               if rc:
+#                   return 1
 
         return 0
 
