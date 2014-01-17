@@ -2,7 +2,12 @@
 
 from ArchiveR3 import *
 import argparse
-from hurry.filesize import size
+try:
+    from hurry.filesize import size
+except ImportError, e:
+    print e
+    print 'Hint: try running "pip install hurry.filesize"'
+    sys.exit(1)
 import re
 import subprocess
 import sys
