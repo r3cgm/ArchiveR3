@@ -65,8 +65,12 @@ def dir_validate(dir, create=0, write=0, read=0):
                 if os.path.exists(dir):
                     status_result('CREATED', 1, no_newline=1)
                 else:
-                    status_result('FAILED', 3)
+                    status_result('CREATION FAILED', 3)
                     return 1
+            else:
+                status_item(dir)
+                status_result('CREATION ABORTED', 3)
+                return 1
 
     if not os.path.isdir(dir):
         status_result('NOT A DIRECTORY', 3)
