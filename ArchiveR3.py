@@ -73,7 +73,8 @@ def dir_validate(dir, create=0, write=0, read=0):
                 status_result('CREATION ABORTED', 3)
                 return 1
         else:
-            status_result('ABORTED', 3)
+            status_item(dir)
+            status_result('BAILING', 3)
             return 1
 
     if not os.path.isdir(dir):
@@ -143,30 +144,22 @@ def config_validate(config):
     """ Make sure that all the configuration settings make sense.  Try to
     be helpful and intervene if there are issues, otherwise bail. """
 
-    status_item('Target ' + config.backup_dir)
+    status_item('Containers ' + config.backup_dir)
     rc = dir_validate(config.backup_dir, create=1, write=1)
     if rc:
         return 1
 
-    config.archive_list = config.archives.split()
-    for i, s in enumerate(config.archive_list):
-        config.archive_list[i] = normalize_dir(s)
-        status_item('Archive ' + config.archive_list[i])
-        rc = dir_validate(config.archive_list[i], read=1)
-        if rc:
-            return 1
+    status_item('Container Mounts ' + config.mount_dir)
+    rc = dir_validate(config.mount_dir)
+    if rc:
+        return 1
 
     status_item('Data ' + config.data_dir)
     rc = dir_validate(config.data_dir, create=1, write=1)
     if rc:
         return 1
 
-    status_item('Mount ' + config.mount_dir)
-    rc = dir_validate(config.mount_dir)
-    if rc:
-        return 1
-
-    status_item('Log ' + config.log_dir)
+    status_item('Logging ' + config.log_dir)
     rc = dir_validate(config.log_dir, create=1, write=1)
     if rc:
         return 1
@@ -221,6 +214,14 @@ def config_validate(config):
     p1 = subprocess.Popen(['sudo', 'losetup', '-f'], stdout=subprocess.PIPE)
     output = p1.communicate()[0]
     print output
+
+    config.archive_list = config.archives.split()
+    for i, s in enumerate(config.archive_list):
+        config.archive_list[i] = normalize_dir(s)
+        status_item('Archive ' + config.archive_list[i])
+        rc = dir_validate(config.archive_list[i], read=1)
+        if rc:
+            return 1
 
     return 0
 

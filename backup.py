@@ -84,16 +84,18 @@ class backup:
     def backup(self):
         for i, s in enumerate(self.config.archive_list):
             archive_dir = self.config.archive_list[i]
-            status_item('Backing Up')
+            status_item('Archive')
             status_result(archive_dir)
-            status_item('Source size (512 byte blocks)')
+
+            status_item('Size (512 byte blocks)')
             arc_block = dir_size(archive_dir, block_size=512)
             status_result(str(arc_block) + ' (' + size(arc_block) + ')')
 
             arc_dir = self.config.backup_dir
             arc_file = self.config.archive_list[i].split('/')[-2] + '.archive'
             arc = arc_dir + arc_file
-            status_item('Archive')
+
+            status_item('Encrypted Container')
             status_result(arc)
 
             # existence check
@@ -108,7 +110,7 @@ class backup:
                 if rc:
                     return 1
 
-            status_item('Archive Size')
+            status_item('Container Size')
             archive_size = os.path.getsize(arc)
             status_result(str(archive_size) + ' (' + size(archive_size) + ')')
 
@@ -128,8 +130,11 @@ class backup:
                 return 1
 
             # mount check
+
             status_item('Mount Point')
-#           config_validate(
+            archive_mount = self.config.mount_dir + arc_file
+            status_result(archive_mount)
+            dir_validate(archive_mount)
 
         return 0
 
