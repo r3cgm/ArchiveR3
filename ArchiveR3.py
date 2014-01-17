@@ -50,10 +50,11 @@ def dir_size(dir, block_size=0):
     return total_size
 
 
-def dir_validate(dir, create=0, write=0, read=0):
+def dir_validate(dir, create=0, write=0, read=0, sudo=0):
     """ Validate that a directory exists.  Optionally specify create=1 to
     prompt the user to create it.  Specify write=1 to create (and remove) a
-    test file.  Specify read=0 to read any random file from the directory.
+    test file.  Specify read=1 to read any random file from the directory.
+    Specify sudo=1 to perform mkdir operations with root-level privileges.
     Return 1 if no valid directory exists at the end of this function. """
     if not os.path.exists(dir):
         if create:
@@ -62,7 +63,14 @@ def dir_validate(dir, create=0, write=0, read=0):
             confirm_create = raw_input()
             if confirm_create == 'y':
                 status_item(dir)
-                os.makedirs(dir)
+                if sudo:
+                    try:
+                        subprocess.call(['sudo', 'mkdir', dir])
+                    except Exception, e:
+                        status_result('ERROR ' + e, 3)
+                else:
+                    os.makedirs(dir)
+
                 if os.path.exists(dir):
                     status_result('CREATED', 1, no_newline=1)
                 else:
@@ -203,6 +211,17 @@ def config_validate(config):
     status_item('sudo losetup')
     try:
         subprocess.check_call(['sudo', 'losetup', '-h'], stdout=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+        return 1
+    status_result('FOUND', 1)
+
+    status_item('sudo mkdir')
+    try:
+        subprocess.check_call(['sudo', 'mkdir', '--help'], stdout=devnull)
     except subprocess.CalledProcessError, e:
         status_result('ERROR', 3)
         return 1
