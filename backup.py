@@ -41,11 +41,12 @@ class backup:
         self.args = parser.parse_args()
 
     def create_archive(self, archive_dir, archive, backup_dir, arc_block):
-        """ Create an encrypted archive.  Return 1 if any problems or 0 for
+        """ Create an encrypted archive.  The resulting archive size is only
+        accurate to the nearest megabyte.  Return 1 if any problems or 0 for
         success. """
-        archive_size = int(arc_block /
-                           self.config.provision_capacity_percent * 100)
-        archive_size_m = int(archive_size / 1024 / 1024)
+        archive_size = int(float(arc_block) /
+                           float(self.config.provision_capacity_percent) * 100)
+        archive_size_m = int(float(archive_size) / 1024 / 1024)
         status_item('Required Archive Size')
         status_result(str(archive_size) + ' (' + size(archive_size) + ')')
         status_item('Archive File')
@@ -83,6 +84,8 @@ class backup:
             arc_file = self.config.archive_list[i].split('/')[-2] + '.archive'
             arc = arc_dir + arc_file
             status_item(arc_file)
+
+            # existence check
             if os.path.isfile(arc):
                 status_result('FOUND', 1)
             else:
@@ -97,6 +100,25 @@ class backup:
                         return 1
                 else:
                     return 1
+
+            # size check
+            archive_size = os.path.getsize(arc)
+            status_item('Archive Size')
+            status_result(str(archive_size) + ' (' + size(archive_size) + ')')
+
+            status_item('Capacity')
+            capacity = float(arc_block) / float(archive_size) * 100
+
+            if capacity < self.config.provision_capacity_reprovision:
+                status_result(str('%0.1f%%' % capacity), 1)
+            else:
+                status_result(str('%0.1f%%' % capacity), 2)
+                status_item('Reprovision? (y/n)')
+                confirm_reprovision = raw_input()
+                status_item('Reprovisioning')
+                status_result('TBD')
+                return 1
+
         return 0
 
     def main(self):
