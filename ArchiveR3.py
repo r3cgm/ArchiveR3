@@ -2,6 +2,7 @@
 
 import ConfigParser
 import os
+import subprocess
 import sys
 import time
 
@@ -168,6 +169,31 @@ def config_validate(config):
 
     status_item('Reprovision Capacity')
     status_result(str(config.provision_capacity_reprovision) + '%')
+
+    devnull = open('/dev/null', 'w')
+
+    status_item('Utility dd')
+    try:
+        subprocess.check_call(['dd', '--version'], stdout=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+        return 1
+    status_result('FOUND', 1)
+
+    status_item('Utility pv')
+    try:
+        subprocess.check_call(['pv', '--version'], stdout=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND (install package "pv")', 3)
+        return 1
+    status_result('FOUND', 1)
+
     return 0
 
 
