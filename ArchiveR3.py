@@ -2,6 +2,7 @@
 
 import ConfigParser
 import os
+import re
 import subprocess
 import sys
 import time
@@ -126,6 +127,21 @@ def dir_validate(dir, create=0, write=0, read=0, sudo=0):
         # make sure we get a newline in
         status_result('')
 
+
+def lb_exists(file):
+    """ Determine if a loopback device has been allocated for a particular
+    file. """
+    status_item('Loopback Device')
+    p1 = subprocess.Popen(['sudo', 'losetup', '--associated', file],
+                          stdout=subprocess.PIPE)
+    lbmatch = p1.communicate()[0]
+    lbmatch = ''.join(lbmatch.split())
+    if re.match('.*\(' + file + '\).*', str(lbmatch)):
+        status_result('FOUND', 1)
+    else:
+        status_result('MISSING', 3)
+        return 1
+    return 0
 
 def config_read(config_file):
     """ Read the configuration. """
