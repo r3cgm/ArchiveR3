@@ -141,9 +141,12 @@ class backup:
 
             # loopback device check
 
-            rc = lb_exists(container)
-            if rc:
-                return 1
+            lbdevice = lb_exists(container)
+            if not lbdevice:
+                lbdevice = lb_next()
+                rc = lb_setup(lbdevice, container)
+                if rc:
+                    return 1
 
             # mapper check
 
@@ -153,7 +156,8 @@ class backup:
                 status_result('FOUND', 1)
             else:
                 status_result('NOT FOUND', 2)
-                rc = map_container(container_file, self.config.password_base)
+                rc = map_container(lbdevice, container_file,
+                                   self.config.password_base)
                 if rc:
                     return 1
 

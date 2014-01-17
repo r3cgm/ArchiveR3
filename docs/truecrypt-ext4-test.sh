@@ -32,7 +32,7 @@ interact
 
 # had to run this twice, why?
 
-# map loopback device with file container
+# create a dm-crypt drive mapping
 expect -c "spawn sudo tcplay -m $ARCHIVE_FILE -d $LOOPBACK_DEV
 set timeout 1
 expect Passphrase

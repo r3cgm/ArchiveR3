@@ -130,18 +130,41 @@ def dir_validate(dir, create=0, write=0, read=0, sudo=0):
 
 def lb_exists(file):
     """ Determine if a loopback device has been allocated for a particular
-    file. """
-    status_item('Loopback Device')
+    file.  If found, return it.  If not, return 0.  Note this is opposite
+    normal functions where 0 means success. """
+    status_item('Container > Loopback Device')
     p1 = subprocess.Popen(['sudo', 'losetup', '--associated', file],
                           stdout=subprocess.PIPE)
     lbmatch = p1.communicate()[0]
     lbmatch = ''.join(lbmatch.split())
     if re.match('.*\(' + file + '\).*', str(lbmatch)):
-        status_result('FOUND', 1)
+        lbmatch = re.sub(':.*$', '', lbmatch)
+        status_result('ASSOCIATED ' + lbmatch, 1)
+        return lbmatch
     else:
         status_result('MISSING', 3)
-        return 1
+        return 0
     return 0
+
+
+def lb_next():
+    """ Return the name of the next free loopback device. """
+    p1 = subprocess.Popen(['sudo', 'losetup', '-f'], stdout=subprocess.PIPE)
+    lbdevice = p1.communicate()[0]
+    lbdevice = ''.join(lbdevice.split())
+    if lbdevice:
+        return lbdevice
+    return 0
+
+
+def lb_setup(lbdevice, file):
+    """ Associate a loopback device with a file.  Return 1 if failure or 0
+    if successful. """
+    # TBD
+    status_item('Loopback Setup')
+    status_result('TBD')
+    return 1
+
 
 def config_read(config_file):
     """ Read the configuration. """
@@ -288,17 +311,11 @@ def normalize_dir(dir):
     return dir
 
 
-def map_container(container_file, password_base):
+def map_container(lbdevice, container_file, password_base):
     """ Map an encrypted container as a loopback device. """
     status_item('Map container mount? (y/n)')
     confirm_mount_map = raw_input()
     if confirm_mount_map == 'y':
-        status_item('Next Free Loopback Device')
-        p1 = subprocess.Popen(['sudo', 'losetup', '-f'],
-                              stdout=subprocess.PIPE)
-        lbdevice = p1.communicate()[0]
-        lbdevice = ''.join(lbdevice.split())
-        status_result(lbdevice)
 
         try:
             print
