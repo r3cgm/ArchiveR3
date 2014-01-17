@@ -96,7 +96,7 @@ class backup:
                 '.archive'
             container = container_dir + container_file
 
-            status_item('Encrypted Container')
+            status_item('Container')
             status_result(container)
 
             # existence check
@@ -135,12 +135,21 @@ class backup:
 
             archive_mount = self.config.mount_dir + container_file
             status_item('Mount Point ' + archive_mount)
-            dir_validate(archive_mount, create=1, sudo=1)
+            rc = dir_validate(archive_mount, create=1, sudo=1)
+            if rc:
+                return 1
 
             # mapper check
 
+            archive_map = '/dev/mapper/' + container_file
+            status_item('Map ' + archive_map)
             if os.path.isdir('/dev/mapper/' + container_file):
-                print
+                status_result('FOUND', 1)
+            else:
+                status_result('NOT FOUND', 2)
+                rc = map_container(container_file, self.config.password_base)
+                if rc:
+                    return 1
 
         return 0
 

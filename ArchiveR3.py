@@ -197,6 +197,39 @@ def config_validate(config):
         return 1
     status_result('FOUND', 1)
 
+    status_item('expect')
+    try:
+        subprocess.check_call(['expect', '-v'], stdout=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND (install package "expect")', 3)
+        return 1
+    status_result('FOUND', 1)
+
+    status_item('(sudo) losetup')
+    try:
+        subprocess.check_call(['sudo', 'losetup', '-h'], stdout=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+        return 1
+    status_result('FOUND', 1)
+
+    status_item('(sudo) mkdir')
+    try:
+        subprocess.check_call(['sudo', 'mkdir', '--help'], stdout=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+        return 1
+    status_result('FOUND', 1)
+
     status_item('pv')
     try:
         subprocess.check_call(['pv', '--version'], stdout=devnull)
@@ -208,31 +241,16 @@ def config_validate(config):
         return 1
     status_result('FOUND', 1)
 
-    status_item('sudo losetup')
+    status_item('(sudo) tcplay')
     try:
-        subprocess.check_call(['sudo', 'losetup', '-h'], stdout=devnull)
+        subprocess.check_call(['sudo', 'tcplay', '-v'], stdout=devnull)
     except subprocess.CalledProcessError, e:
         status_result('ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
+        status_result('NOT FOUND (install package "tcplay")', 3)
         return 1
     status_result('FOUND', 1)
-
-    status_item('sudo mkdir')
-    try:
-        subprocess.check_call(['sudo', 'mkdir', '--help'], stdout=devnull)
-    except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
-        return 1
-    except Exception, e:
-        status_result('NOT FOUND', 3)
-        return 1
-    status_result('FOUND', 1)
-
-    p1 = subprocess.Popen(['sudo', 'losetup', '-f'], stdout=subprocess.PIPE)
-    output = p1.communicate()[0]
-    print output
 
     config.archive_list = config.archives.split()
     for i, s in enumerate(config.archive_list):
@@ -252,6 +270,59 @@ def normalize_dir(dir):
     if dir[-1] != '/':
         dir += '/'
     return dir
+
+
+def map_container(container_file, password_base):
+    """ Map an encrypted container as a loopback device. """
+    status_item('Map container mount? (y/n)')
+    confirm_mount_map = raw_input()
+    if confirm_mount_map == 'y':
+        status_item('Next Free Loopback Device')
+        p1 = subprocess.Popen(['sudo', 'losetup', '-f'],
+                              stdout=subprocess.PIPE)
+        lbdevice = p1.communicate()[0]
+        lbdevice = ''.join(lbdevice.split())
+        status_result(lbdevice)
+
+        try:
+            print
+            subprocess.check_call('expect -c "spawn sudo tcplay ' +
+                                  '-m ' + container_file + ' ' +
+                                  '-d ' + lbdevice + "\n" +
+                                  "set timeout 1\n" +
+                                  "expect Passphrase\n" +
+                                  "send " + password_base +
+                                  container_file + "\r" + "\n" +
+                                  "expect eof\n" +
+                                  '"', shell=True)
+            print
+            print
+        except subprocess.CalledProcessError, e:
+            status_item('Map Command')
+            status_result('ERROR', 3)
+            return 1
+        except Exception, e:
+            status_item('Map Command')
+            status_result('NOT FOUND', 3)
+            return 1
+
+        status_item('Map /dev/mapper/' + container_file)
+        if os.path.isdir('/dev/mapper/' + container_file):
+            status_result('FOUND', 1)
+        else:
+            status_result('FAILED', 3)
+            status_item('Container')
+            status_result('POSSIBLE CORRUPTION', 3)
+            status_item('')
+            status_result('debug manually or rm ' + container_file)
+            status_item('')
+            status_result('and let this utility recreate it')
+            return 1
+
+    else:
+        status_item('Device Mount')
+        status_result('BAILING', 3)
+        return 1
 
 
 def print_header(activity):
