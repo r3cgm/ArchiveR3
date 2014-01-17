@@ -128,6 +128,8 @@ class backup:
                 return 1
 
             # mount check
+            status_item('Mount Point')
+#           config_validate(
 
         return 0
 

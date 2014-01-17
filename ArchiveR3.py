@@ -72,6 +72,9 @@ def dir_validate(dir, create=0, write=0, read=0):
                 status_item(dir)
                 status_result('CREATION ABORTED', 3)
                 return 1
+        else:
+            status_result('ABORTED', 3)
+            return 1
 
     if not os.path.isdir(dir):
         status_result('NOT A DIRECTORY', 3)
@@ -108,7 +111,11 @@ def dir_validate(dir, create=0, write=0, read=0):
                     return 1
                 break
 
-    status_result('')
+    if not read and not write:
+        status_result('FOUND', 1)
+    else:
+        # make sure we get a newline in
+        status_result('')
 
 
 def config_read(config_file):
@@ -119,6 +126,7 @@ def config_read(config_file):
     config = ConfigParser.RawConfigParser()
     config.read(config_file)
     config.backup_dir = normalize_dir(config.get('ArchiveR3', 'backup_dir'))
+    config.mount_dir = normalize_dir(config.get('ArchiveR3', 'mount_dir'))
     config.archives = normalize_dir(config.get('ArchiveR3', 'archives'))
     config.data_dir = normalize_dir(config.get('ArchiveR3', 'data_dir'))
     config.log_dir = normalize_dir(config.get('ArchiveR3', 'log_dir'))
@@ -150,6 +158,11 @@ def config_validate(config):
 
     status_item('Data ' + config.data_dir)
     rc = dir_validate(config.data_dir, create=1, write=1)
+    if rc:
+        return 1
+
+    status_item('Mount ' + config.mount_dir)
+    rc = dir_validate(config.mount_dir)
     if rc:
         return 1
 
