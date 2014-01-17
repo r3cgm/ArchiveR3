@@ -139,6 +139,18 @@ class backup:
             if rc:
                 return 1
 
+            # loopback device check
+
+            status_item('Loopback Device')
+            p1 = subprocess.Popen(['sudo', 'losetup', '--associated',
+                                  container], stdout=subprocess.PIPE)
+            lbmatch = p1.communicate()[0]
+            lbmatch = ''.join(lbmatch.split())
+            if re.match('.*\(' + container + '\).*', str(lbmatch)):
+                status_result('FOUND', 1)
+            else:
+                status_result('MISSING', 3)
+
             # mapper check
 
             archive_map = '/dev/mapper/' + container_file
