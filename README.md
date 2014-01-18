@@ -1,7 +1,7 @@
 ArchiveR3
 =========
 
-All-in-one backup, verification, and restore Python scripts, leveraging rsync and Truecrypt volumes. Ideal for encrypted cloud backups.
+All-in-one backup, verify, and restore Python scripts, leveraging rsync and Truecrypt volumes. Ideal for encrypted cloud backups.
 
 !!! This code is not ready for prime time.  I'm just checking it in so I can start revision control. !!!
 
