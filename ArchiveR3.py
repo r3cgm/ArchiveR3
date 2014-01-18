@@ -173,7 +173,6 @@ def lb_encrypted(lbdevice, password_base, container_file):
     try:
         p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                               '-i -d ' + lbdevice + "\n" +
-                              "set exp_internal 1\n" +
                               "set timeout 2\n" +
                               "expect Passphrase\n" +
                               "send " + password_base +
@@ -195,15 +194,58 @@ def lb_encrypted(lbdevice, password_base, container_file):
             # TODO - this condition will need to be flushed out more once
             # we have a legit encrypted volume
             status_result('SUCCESS', 1)
-
-    status_item('Non-0 File Test')
-
     except subprocess.CalledProcessError, e:
+        status_result('FAILURE')
         status_item('Map Command')
         status_result('ERROR', 3)
         return 1
     except Exception, e:
+        status_result('FAILURE')
         status_item('Map Command')
+        status_result('NOT FOUND', 3)
+        return 1
+
+    status_item('Non-0 File Test')
+    # TODO - return here when ready to test a valid archive
+
+
+def lb_encrypt(lbdevice, password_base, container_file):
+    """ Encrypt a loopback device. """
+    status_item('Encrypting Volume')
+    try:
+        p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
+                              '-c -d ' + lbdevice + ' ' +
+                              '-a whirlpool -b AES-256-XTS' + "\n" +
+                              "set timeout 2\n" +
+                              "expect Passphrase\n" +
+                              "send " + password_base +
+                              container_file + '\\r' + "\n" +
+                              "expect Repeat\n" +
+                              "send " + password_base +
+                              container_file + '\\r' + "\n" +
+                              'expect proceed' + "\n" +
+                              'send y' + '\\r' + "\n" +
+                              'interact' + "\n" +
+                              '"', stdout=subprocess.PIPE, shell=True)
+        result = p1.communicate()[0]
+# TODO
+#       if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
+#                   result, re.DOTALL):
+#           status_result('INCORRECT OR NOT A VALID VOLUME', 3)
+#           return 1
+#       else:
+#           # TODO - this condition will need to be flushed out more once
+#           # we have a legit encrypted volume
+#           status_result('SUCCESS', 1)
+
+    except subprocess.CalledProcessError, e:
+        status_result('FAILURE')
+        status_item('Encrypt Command')
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('FAILURE')
+        status_item('Encrypt Command')
         status_result('NOT FOUND', 3)
         return 1
 
