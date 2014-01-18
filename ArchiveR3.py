@@ -169,13 +169,9 @@ def lb_setup(lbdevice, file):
 def lb_encrypted(lbdevice, password_base, container_file):
     """ Perform tests to determine if the loopback device is a valid
     encrypted container. """
-    status_item('Crypted Test Password')
+    status_item('Password Test')
     try:
-        print
-        print
-        # this will need to be adjusted once we are testing with legit
-        # encrypted volumes
-        subprocess.check_call('expect -c "spawn sudo tcplay ' +
+        p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                               '-i -d ' + lbdevice + "\n" +
                               "set exp_internal 1\n" +
                               "set timeout 2\n" +
@@ -189,9 +185,18 @@ def lb_encrypted(lbdevice, password_base, container_file):
                               "send " + password_base +
                               container_file + '\\r' + "\n" +
                               "expect eof\n" +
-                              '"', shell=True)
-        print
-        print
+                              '"', stdout=subprocess.PIPE, shell=True)
+        result = p1.communicate()[0]
+        if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
+                    result, re.DOTALL):
+            status_result('INCORRECT OR NOT A VALID VOLUME', 3)
+            return 1
+        else:
+            # TODO - this condition will need to be flushed out more once
+            # we have a legit encrypted volume
+            status_result('SUCCESS', 1)
+
+    status_item('Non-0 File Test')
 
     except subprocess.CalledProcessError, e:
         status_item('Map Command')
