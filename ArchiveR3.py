@@ -128,6 +128,13 @@ def dir_validate(dir, create=0, write=0, read=0, sudo=0):
         status_result('')
 
 
+def lb_benchmark_cryptspeed():
+    """ Measure how quickly a container can be encrypted.  Return the results
+    in bytes per second. """
+    # TODO (need to wait until other functions like deallocating the
+    # loopback device are complete)
+
+
 def lb_exists(file):
     """ Determine if a loopback device has been allocated for a particular
     file.  If found, return it.  If not, return 0.  Note this is opposite
@@ -171,21 +178,30 @@ def lb_encrypted(lbdevice, password_base, container_file):
     encrypted container. """
     status_item('Password Test')
     try:
+#       p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
+#                             '-i -d ' + lbdevice + "\n" +
+#                             "set timeout 2\n" +
+#                             "expect Passphrase\n" +
+#                             "send " + password_base +
+#                             container_file + '\\r' + "\n" +
+#                             "expect Passphrase\n" +
+#                             "send " + password_base +
+#                             container_file + '\\r' + "\n" +
+#                             "expect Passphrase\n" +
+#                             "send " + password_base +
+#                             container_file + '\\r' + "\n" +
+#                             "expect eof\n" +
+#                             '"', stdout=subprocess.PIPE, shell=True)
         p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                               '-i -d ' + lbdevice + "\n" +
                               "set timeout 2\n" +
                               "expect Passphrase\n" +
                               "send " + password_base +
                               container_file + '\\r' + "\n" +
-                              "expect Passphrase\n" +
-                              "send " + password_base +
-                              container_file + '\\r' + "\n" +
-                              "expect Passphrase\n" +
-                              "send " + password_base +
-                              container_file + '\\r' + "\n" +
                               "expect eof\n" +
                               '"', stdout=subprocess.PIPE, shell=True)
         result = p1.communicate()[0]
+        print 'result ' + result
         if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
                     result, re.DOTALL):
             status_result('INCORRECT OR NOT A VALID VOLUME', 3)
@@ -228,6 +244,7 @@ def lb_encrypt(lbdevice, password_base, container_file):
                               'interact' + "\n" +
                               '"', stdout=subprocess.PIPE, shell=True)
         result = p1.communicate()[0]
+        print 'result: ' + result
 # TODO
 #       if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
 #                   result, re.DOTALL):

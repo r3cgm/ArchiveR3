@@ -87,7 +87,7 @@ class backup:
             status_item('Archive')
             status_result(archive_dir)
 
-            status_item('Size (512 byte blocks)')
+            status_item('Archive Size (512 byte blocks)')
             arc_block = dir_size(archive_dir, block_size=512)
             status_result(str(arc_block) + ' (' + size(arc_block) + ')')
 
@@ -140,12 +140,18 @@ class backup:
                 if rc:
                     return 1
 
-            # determine if loopback device is encrypted
+            # determine if loopback device is valid (encrypted)
 
             rc = lb_encrypted(lbdevice, self.config.password_base,
                               container_file)
             if rc:
-                return 1
+                status_item('!! Destroy and recreate archive? (y/n)')
+                confirm_create = raw_input()
+                if confirm_create == 'y':
+                    rc = lb_encrypt(lbdevice, self.config.password_base,
+                                    container_file)
+                else:
+                    return 1
 
             # mount point check
 
