@@ -192,14 +192,34 @@ def lb_encrypted(lbdevice, password_base, container_file):
 #                             container_file + '\\r' + "\n" +
 #                             "expect eof\n" +
 #                             '"', stdout=subprocess.PIPE, shell=True)
+
+#       p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
+#                             '-i -d ' + lbdevice + "\n" +
+#                             "set timeout 2\n" +
+#                             "expect Passphrase\n" +
+#                             "send " + password_base +
+#                             container_file + '\\r' + "\n" +
+#                             "expect eof\n" +
+#                             '"', stdout=subprocess.PIPE, shell=True)
+
         p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                               '-i -d ' + lbdevice + "\n" +
                               "set timeout 2\n" +
                               "expect Passphrase\n" +
                               "send " + password_base +
                               container_file + '\\r' + "\n" +
+
+# failure condition
+#                             "expect Passphrase\n" +
+#                             "send " + password_base +
+#                             container_file + '\\r' + "\n" +
+#                             "expect Passphrase\n" +
+#                             "send " + password_base +
+#                             container_file + '\\r' + "\n" +
+
                               "expect eof\n" +
                               '"', stdout=subprocess.PIPE, shell=True)
+
         result = p1.communicate()[0]
         print 'result ' + result
         if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
