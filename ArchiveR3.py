@@ -128,13 +128,6 @@ def dir_validate(dir, create=0, write=0, read=0, sudo=0):
         status_result('')
 
 
-def lb_benchmark_cryptspeed():
-    """ Measure how quickly a container can be encrypted.  Return the results
-    in bytes per second. """
-    # TODO (need to wait until other functions like deallocating the
-    # loopback device are complete)
-
-
 def lb_exists(file):
     """ Determine if a loopback device has been allocated for a particular
     file.  If found, return it.  If not, return 0.  Note this is opposite
