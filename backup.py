@@ -45,11 +45,11 @@ class backup:
             sys.exit(1)
         self.args = parser.parse_args()
 
-    def create_archive(self, archive_dir, archive, backup_dir, arc_block):
-        """ Create an encrypted archive.  The resulting archive size is only
+    def create_archive(self, archive_dir, container, backup_dir, arc_block):
+        """ Create an encrypted container.  The resulting containersize is only
         accurate to the nearest megabyte.  Return 1 if any problems or 0 for
         success. """
-        status_item('Create? (y/n)')
+        status_item('Create new archive? (y/n)')
         confirm_create = raw_input()
         if confirm_create == 'y':
             archive_size = int(float(arc_block) /
@@ -57,8 +57,6 @@ class backup:
             archive_size_m = int(float(archive_size) / 1024 / 1024)
             status_item('Required Archive Size')
             status_result(str(archive_size) + ' (' + size(archive_size) + ')')
-            status_item('Archive File')
-            status_result(backup_dir + archive)
             status_item('Generating Container')
             status_result('IN PROGRESS', 2)
             try:
@@ -66,7 +64,7 @@ class backup:
                                       'count=' + str(archive_size_m) +
                                       ' | pv -s ' + str(archive_size) + ' | ' +
                                       'dd status=none ' +
-                                      'of=' + backup_dir + archive, shell=True)
+                                      'of=' + container, shell=True)
             except subprocess.CalledProcessError, e:
                 status_item('Generation Result')
                 status_result('FAILED: ' + str(e), 3)
@@ -113,22 +111,32 @@ class backup:
                     return 1
 
             status_item('Container Size')
-            archive_size = os.path.getsize(container)
-            status_result(str(archive_size) + ' (' + size(archive_size) + ')')
+            container_size = os.path.getsize(container)
+            status_result(str(container_size) + ' (' +
+                          size(container_size) + ')')
 
             # capacity check
 
             status_item('Capacity')
-            capacity = float(arc_block) / float(archive_size) * 100
+            if container_size:
+                capacity = float(arc_block) / float(container_size) * 100
+                if capacity > 100:
+                    capacity = 100
+            else:
+                capacity = 100
 
             if capacity < self.config.provision_capacity_reprovision:
                 status_result(str('%0.1f%%' % capacity), 1)
             else:
                 status_result(str('%0.1f%%' % capacity), 2)
-                status_item('Reprovision? (y/n)')
-                confirm_reprovision = raw_input()
-                status_item('Reprovisioning')
-                status_result('TBD')
+#               status_item('Reprovision? (y/n)')
+#               confirm_reprovision = raw_input()
+#               status_item('Reprovisioning')
+                rc = self.create_archive(self.config.archive_list[i],
+                                         container, self.config.backup_dir,
+                                         arc_block)
+                if rc:
+                    return 1
                 return 1
 
             # loopback device check
@@ -145,7 +153,7 @@ class backup:
             rc = lb_encrypted(lbdevice, self.config.password_base,
                               self.config.backup_dir, container_file)
             if rc:
-                status_item('!! Destroy and recreate archive? (y/n)')
+                status_item('!! DESTROY AND RECREATE ARCHIVE? (y/n)')
                 confirm_create = raw_input()
                 if confirm_create == 'y':
                     rc = lb_encrypt(lbdevice, self.config.password_base,

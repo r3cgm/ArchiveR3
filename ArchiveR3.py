@@ -232,6 +232,7 @@ def lb_encrypt(lbdevice, password_base, container_file):
     """ Encrypt a loopback device. """
     status_item('Encrypting Volume')
     try:
+#       subprocess.Popen('expect -c "spawn sudo tcplay ' +
         p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                               '-c -d ' + lbdevice + ' ' +
                               '-a whirlpool -b AES-256-XTS' + "\n" +
@@ -244,10 +245,18 @@ def lb_encrypt(lbdevice, password_base, container_file):
                               container_file + '\\r' + "\n" +
                               'expect proceed' + "\n" +
                               'send y' + '\\r' + "\n" +
-                              'interact' + "\n" +
+                              'expect done' + "\n" +
+                              "expect eof\n" +
+#                             '"', shell=True)
                               '"', stdout=subprocess.PIPE, shell=True)
-        result = p1.communicate()[0]
-        print 'result: ' + result
+#                             stderr=subprocess.STDOUT, shell=True)
+#                             'interact' + "\n" +
+#                             '"', stdout=subprocess.PIPE, shell=True)
+#       result = p1.communicate()[0]
+#       print 'result: ' + result
+        for line in iter(p1.stdout.readline, b''):
+            print(">>> " + line.rstrip())
+
 # TODO
 #       if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
 #                   result, re.DOTALL):
