@@ -3,6 +3,7 @@
 import ConfigParser
 import os
 import re
+import struct
 import subprocess
 import sys
 import time
@@ -176,66 +177,43 @@ def lb_setup(lbdevice, file):
         return 1
 
 
-def lb_encrypted(lbdevice, password_base, container_file):
+def lb_encrypted(lbdevice, password_base, backup_dir, container_file):
     """ Perform tests to determine if the loopback device is a valid
     encrypted container. """
+    status_item('Container 10 Meg Binary Check')
+    sum = 0
+    file = open(backup_dir + container_file, 'rb')
+    count = 0
+    integer = struct.unpack('i', file.read(4))[0]
+    while integer and count < 10000000:
+        sum += integer
+        integer = struct.unpack('i', file.read(4))[0]
+    file.close()
+    if sum:
+        status_result('BINARY', 1)
+    else:
+        status_result('ALL ZEROS', 3)
+        return 1
+
     status_item('Password Test')
     try:
-#       p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
-#                             '-i -d ' + lbdevice + "\n" +
-#                             "set timeout 2\n" +
-#                             "expect Passphrase\n" +
-#                             "send " + password_base +
-#                             container_file + '\\r' + "\n" +
-#                             "expect Passphrase\n" +
-#                             "send " + password_base +
-#                             container_file + '\\r' + "\n" +
-#                             "expect Passphrase\n" +
-#                             "send " + password_base +
-#                             container_file + '\\r' + "\n" +
-#                             "expect eof\n" +
-#                             '"', stdout=subprocess.PIPE, shell=True)
-
-#       p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
-#                             '-i -d ' + lbdevice + "\n" +
-#                             "set timeout 2\n" +
-#                             "expect Passphrase\n" +
-#                             "send " + password_base +
-#                             container_file + '\\r' + "\n" +
-#                             "expect eof\n" +
-#                             '"', stdout=subprocess.PIPE, shell=True)
-
         p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                               '-i -d ' + lbdevice + "\n" +
                               "set timeout 2\n" +
                               "expect Passphrase\n" +
                               "send " + password_base +
                               container_file + '\\r' + "\n" +
-
-
                               "expect eof\n" +
                               '"', stdout=subprocess.PIPE, shell=True)
-
-# put this inside the whitespace gap above
-# failure condition
-#                             "expect Passphrase\n" +
-#                             "send " + password_base +
-#                             container_file + '\\r' + "\n" +
-#                             "expect Passphrase\n" +
-#                             "send " + password_base +
-#                             container_file + '\\r' + "\n" +
-
         result = p1.communicate()[0]
-#       print 'result ' + result
         if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
                     result, re.DOTALL):
             status_result('INCORRECT OR NOT A VALID VOLUME', 3)
             return 1
         elif re.match('.*PBKDF2.*', result, re.DOTALL):
+            print 'result: ' + result
             status_result('VERIFIED', 1)
         else:
-            # TODO - this condition will need to be flushed out more once
-            # we have a legit encrypted volume
             status_result('UNKNOWN CONDITION', 3)
             return 1
     except subprocess.CalledProcessError, e:
@@ -248,9 +226,6 @@ def lb_encrypted(lbdevice, password_base, container_file):
         status_item('Map Command')
         status_result('NOT FOUND', 3)
         return 1
-
-    status_item('Non-0 File Test')
-    # TODO - return here when ready to test a valid archive
 
 
 def lb_encrypt(lbdevice, password_base, container_file):

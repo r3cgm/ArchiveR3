@@ -143,7 +143,7 @@ class backup:
             # determine if loopback device is valid (encrypted)
 
             rc = lb_encrypted(lbdevice, self.config.password_base,
-                              container_file)
+                              self.config.backup_dir, container_file)
             if rc:
                 status_item('!! Destroy and recreate archive? (y/n)')
                 confirm_create = raw_input()
