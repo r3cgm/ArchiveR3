@@ -142,28 +142,38 @@ def lb_exists(file):
         status_result('ASSOCIATED ' + lbmatch, 1)
         return lbmatch
     else:
-        status_result('MISSING', 3)
+        status_result('MISSING', 2)
         return 0
     return 0
 
 
 def lb_next():
     """ Return the name of the next free loopback device. """
+    status_item('Allocate Loopback')
     p1 = subprocess.Popen(['sudo', 'losetup', '-f'], stdout=subprocess.PIPE)
     lbdevice = p1.communicate()[0]
     lbdevice = ''.join(lbdevice.split())
     if lbdevice:
+        status_result(lbdevice, 1)
         return lbdevice
-    return 0
+    else:
+        status_result('FAILED', 3)
+        return 0
 
 
 def lb_setup(lbdevice, file):
     """ Associate a loopback device with a file.  Return 1 if failure or 0
     if successful. """
-    # TBD
     status_item('Loopback Setup')
-    status_result('TBD')
-    return 1
+    result = subprocess.Popen(['sudo', 'losetup', lbdevice, file],
+                          stderr=subprocess.PIPE).communicate()[0]
+    if re.match('.*Loop device is ' + lbdevice + '.*', result):
+        status_result(str(file) + ' > ' + lbdevice, 1)
+        return 0
+    else:
+        status_result('FAILED', 3)
+        print 'did not match: ' + result
+        return 1
 
 
 def lb_encrypted(lbdevice, password_base, container_file):
@@ -202,6 +212,11 @@ def lb_encrypted(lbdevice, password_base, container_file):
                               "send " + password_base +
                               container_file + '\\r' + "\n" +
 
+
+                              "expect eof\n" +
+                              '"', stdout=subprocess.PIPE, shell=True)
+
+# put this inside the whitespace gap above
 # failure condition
 #                             "expect Passphrase\n" +
 #                             "send " + password_base +
@@ -209,9 +224,6 @@ def lb_encrypted(lbdevice, password_base, container_file):
 #                             "expect Passphrase\n" +
 #                             "send " + password_base +
 #                             container_file + '\\r' + "\n" +
-
-                              "expect eof\n" +
-                              '"', stdout=subprocess.PIPE, shell=True)
 
         result = p1.communicate()[0]
         print 'result ' + result
