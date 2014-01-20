@@ -226,15 +226,18 @@ def lb_encrypted(lbdevice, password_base, container_file):
 #                             container_file + '\\r' + "\n" +
 
         result = p1.communicate()[0]
-        print 'result ' + result
+#       print 'result ' + result
         if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
                     result, re.DOTALL):
             status_result('INCORRECT OR NOT A VALID VOLUME', 3)
             return 1
+        elif re.match('.*PBKDF2.*', result, re.DOTALL):
+            status_result('VERIFIED', 1)
         else:
             # TODO - this condition will need to be flushed out more once
             # we have a legit encrypted volume
-            status_result('SUCCESS', 1)
+            status_result('UNKNOWN CONDITION', 3)
+            return 1
     except subprocess.CalledProcessError, e:
         status_result('FAILURE')
         status_item('Map Command')
