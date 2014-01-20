@@ -165,10 +165,10 @@ def lb_setup(lbdevice, file):
     """ Associate a loopback device with a file.  Return 1 if failure or 0
     if successful. """
     status_item('Loopback Setup')
-    result = subprocess.Popen(['sudo', 'losetup', lbdevice, file],
-                          stderr=subprocess.PIPE).communicate()[0]
-    if re.match('.*Loop device is ' + lbdevice + '.*', result):
-        status_result(str(file) + ' > ' + lbdevice, 1)
+    result = subprocess.Popen(['sudo', 'losetup', '--verbose', lbdevice, file],
+                              stdout=subprocess.PIPE).communicate()[0]
+    if re.match('.*Loop device is ' + str(lbdevice) + '.*', result):
+        status_result(str(os.path.basename(file)) + ' > ' + lbdevice, 1)
         return 0
     else:
         status_result('FAILED', 3)
