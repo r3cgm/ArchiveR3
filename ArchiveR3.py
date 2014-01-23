@@ -187,7 +187,9 @@ def lb_encrypted(lbdevice, password_base, backup_dir, container_file):
     integer = struct.unpack('i', file.read(4))[0]
     while integer and count < 10000000:
         sum += integer
-        integer = struct.unpack('i', file.read(4))[0]
+        integer_file = file.read(4)
+        integer_file = '\0' * (4 - len(integer_file)) + integer_file
+        integer = struct.unpack('i', integer_file)[0]
     file.close()
     if sum:
         status_result('BINARY', 1)
