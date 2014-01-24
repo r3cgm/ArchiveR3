@@ -169,19 +169,18 @@ class backup:
             if rc:
                 return 1
 
-
             # mapper check
 
-#           archive_map = '/dev/mapper/' + container_file
-#           status_item('Map ' + archive_map)
-#           if os.path.isdir('/dev/mapper/' + container_file):
-#               status_result('FOUND', 1)
-#           else:
-#               status_result('NOT FOUND', 2)
-#               rc = map_container(lbdevice, container_file,
-#                                  self.config.password_base)
-#               if rc:
-#                   return 1
+            archive_map = '/dev/mapper/' + container_file
+            status_item('Map ' + archive_map)
+            if os.path.islink('/dev/mapper/' + container_file):
+                status_result('FOUND', 1)
+            else:
+                status_result('NOT FOUND', 2)
+                rc = map_container(lbdevice, container_file,
+                                   self.config.password_base)
+                if rc:
+                    return 1
 
         return 0
 

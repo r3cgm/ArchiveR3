@@ -235,7 +235,6 @@ def lb_encrypt(lbdevice, password_base, container_file):
     """ Encrypt a loopback device. """
     status_item('Encrypting Volume')
     try:
-#       subprocess.Popen('expect -c "spawn sudo tcplay ' +
         p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                               '-c -d ' + lbdevice + ' ' +
                               '-a whirlpool -b AES-256-XTS' + "\n" +
@@ -442,10 +441,10 @@ def map_container(lbdevice, container_file, password_base):
                                   "set timeout 1\n" +
                                   "expect Passphrase\n" +
                                   "send " + password_base +
-                                  container_file + "\r" + "\n" +
+                                  container_file + '\\r' + "\n" +
+                                  "expect All\n" +
                                   "expect eof\n" +
                                   '"', shell=True)
-            print
             print
         except subprocess.CalledProcessError, e:
             status_item('Map Command')
@@ -457,7 +456,7 @@ def map_container(lbdevice, container_file, password_base):
             return 1
 
         status_item('Map /dev/mapper/' + container_file)
-        if os.path.isdir('/dev/mapper/' + container_file):
+        if os.path.islink('/dev/mapper/' + container_file):
             status_result('FOUND', 1)
         else:
             status_result('FAILED', 3)
