@@ -62,8 +62,7 @@ def dir_validate(dir, create=0, write=0, read=0, sudo=0):
         if create:
             status_result('NOT FOUND ', 2)
             status_item('Create? (y/n)')
-            confirm_create = raw_input()
-            if confirm_create == 'y':
+            if raw_input() == 'y':
                 status_item(dir)
                 if sudo:
                     try:
@@ -454,8 +453,7 @@ def mount_check(archive_mount):
 def mapper_container(lbdevice, container_file, password_base):
     """ Map an encrypted container as a loopback device. """
     status_item('Map container mount? (y/n)')
-    confirm_mount_map = raw_input()
-    if confirm_mount_map == 'y':
+    if raw_input() == 'y':
         try:
             print
             subprocess.check_call('expect -c "spawn sudo tcplay ' +

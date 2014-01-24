@@ -51,8 +51,7 @@ class backup:
         accurate to the nearest megabyte.  Return 1 if any problems or 0 for
         success. """
         status_item('Create new archive? (y/n)')
-        confirm_create = raw_input()
-        if confirm_create == 'y':
+        if raw_input() == 'y':
             archive_size = int(float(arc_block) /
                                float(self.config.provision_capacity_percent)
                                * 100)
@@ -158,9 +157,8 @@ class backup:
             if loopback_encrypted(lbdevice, self.config.password_base,
                                   self.config.backup_dir, container_file,
                                   self.args.verbose):
-                status_item('!! DESTROY AND RECREATE ARCHIVE? (y/n)')
-                confirm_create = raw_input()
-                if confirm_create == 'y':
+                status_item('!! RECREATE ARCHIVE? (y/n)')
+                if raw_input() == 'y':
                     if loopback_encrypt(lbdevice, self.config.password_base,
                                         container_file):
                         return 1
@@ -179,6 +177,11 @@ class backup:
                 return 1
 
             if filesystem_check(container_file):
+                status_item('!! REFORMAT FILESYSTEM? (y/n)')
+                if raw_input() == 'y':
+                    print 'formatting'
+                else:
+                    print 'no formatting'
                 return 1
 
         return 0
