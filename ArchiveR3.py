@@ -213,8 +213,9 @@ def lb_encrypted(lbdevice, password_base, backup_dir, container_file):
             status_result('INCORRECT OR NOT A VALID VOLUME', 3)
             return 1
         elif re.match('.*PBKDF2.*', result, re.DOTALL):
-            print 'result: ' + result
             status_result('VERIFIED', 1)
+            print
+            print 'result: ' + result
         else:
             status_result('UNKNOWN CONDITION', 3)
             return 1
