@@ -249,13 +249,7 @@ def lb_encrypt(lbdevice, password_base, container_file):
                               'send y' + '\\r' + "\n" +
                               'expect done' + "\n" +
                               "expect eof\n" +
-#                             '"', shell=True)
                               '"', stdout=subprocess.PIPE, shell=True)
-#                             stderr=subprocess.STDOUT, shell=True)
-#                             'interact' + "\n" +
-#                             '"', stdout=subprocess.PIPE, shell=True)
-#       result = p1.communicate()[0]
-#       print 'result: ' + result
         for line in iter(p1.stdout.readline, b''):
             print(">>> " + line.rstrip())
 
@@ -351,6 +345,19 @@ def config_validate(config):
         status_result('NOT FOUND', 3)
         return 1
     status_result('FOUND', 1)
+
+    status_item('(sudo) e2fsck')
+    try:
+        subprocess.check_call(['sudo', 'e2fsck'], stderr=devnull)
+    except subprocess.CalledProcessError, e:
+        if re.match('.*returned non-zero exit status 16.*', str(e)):
+            status_result('FOUND')
+        else:
+            status_result('ERROR', 3)
+            return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+        return 1
 
     status_item('expect')
     try:
