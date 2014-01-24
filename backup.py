@@ -33,7 +33,8 @@ class backup:
             'invoking this tool with it.')
         parser.add_argument('config', action='store',
                             help='Specify an ArchiveR3 config file.')
-        parser.add_argument('-v', dest='verbose', action='store_true',
+        parser.add_argument('-v', '--verbose', dest='verbose',
+                            action='store_true',
                             help='Print the status of each file as it is '
                             'being processed.  Otherwise, a progress dot is '
                             'printed for every 100 files processed.  '
@@ -152,7 +153,8 @@ class backup:
             # loopback device check (encrypted)
 
             rc = lb_encrypted(lbdevice, self.config.password_base,
-                              self.config.backup_dir, container_file)
+                              self.config.backup_dir, container_file,
+                              self.args.verbose)
             if rc:
                 status_item('!! DESTROY AND RECREATE ARCHIVE? (y/n)')
                 confirm_create = raw_input()

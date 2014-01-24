@@ -177,7 +177,8 @@ def lb_setup(lbdevice, file):
         return 1
 
 
-def lb_encrypted(lbdevice, password_base, backup_dir, container_file):
+def lb_encrypted(lbdevice, password_base, backup_dir, container_file,
+                 verbose=False):
     """ Perform tests to determine if the loopback device is a valid
     encrypted container. """
     status_item('Container 10 Meg Binary Check')
@@ -214,8 +215,9 @@ def lb_encrypted(lbdevice, password_base, backup_dir, container_file):
             return 1
         elif re.match('.*PBKDF2.*', result, re.DOTALL):
             status_result('VERIFIED', 1)
-            print
-            print 'result: ' + result
+            if verbose:
+                print
+                print result
         else:
             status_result('UNKNOWN CONDITION', 3)
             return 1
