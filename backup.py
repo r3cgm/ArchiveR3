@@ -175,18 +175,13 @@ class backup:
             if rc:
                 return 1
 
-            # mapper check
-
             archive_map = '/dev/mapper/' + container_file
-            rc = map_check(lbdevice, archive_map, container_file,
-                           self.config.password_base)
-            if rc:
+
+            if mapper_check(lbdevice, archive_map, container_file,
+                            self.config.password_base):
                 return 1
 
-            # filesystem check
-
-            rc = fs_check(container_file)
-            if rc:
+            if filesystem_check(container_file):
                 return 1
 
         return 0
