@@ -54,14 +54,16 @@ class backup:
         confirm_create = raw_input()
         if confirm_create == 'y':
             archive_size = int(float(arc_block) /
-                               float(self.config.provision_capacity_percent) * 100)
+                               float(self.config.provision_capacity_percent)
+                               * 100)
             archive_size_m = int(float(archive_size) / 1024 / 1024)
             status_item('Required Archive Size')
             status_result(str(archive_size) + ' (' + size(archive_size) + ')')
             status_item('Generating Container')
             status_result('IN PROGRESS', 2)
             try:
-                subprocess.check_call('dd if=/dev/zero bs=1048576 status=none ' +
+                subprocess.check_call('dd if=/dev/zero bs=1048576 ' +
+                                      'status=none ' +
                                       'count=' + str(archive_size_m) +
                                       ' | pv -s ' + str(archive_size) + ' | ' +
                                       'dd status=none ' +
@@ -146,33 +148,28 @@ class backup:
 
             # loopback device check (exists)
 
-            lbdevice = lb_exists(container)
+            lbdevice = loopback_exists(container)
             if not lbdevice:
-                lbdevice = lb_next()
+                lbdevice = loopback_next()
                 rc = lb_setup(lbdevice, container)
                 if rc:
                     return 1
 
-            # loopback device check (encrypted)
-
-            rc = lb_encrypted(lbdevice, self.config.password_base,
-                              self.config.backup_dir, container_file,
-                              self.args.verbose)
-            if rc:
+            if loopback_encrypted(lbdevice, self.config.password_base,
+                                  self.config.backup_dir, container_file,
+                                  self.args.verbose):
                 status_item('!! DESTROY AND RECREATE ARCHIVE? (y/n)')
                 confirm_create = raw_input()
                 if confirm_create == 'y':
-                    rc = lb_encrypt(lbdevice, self.config.password_base,
-                                    container_file)
+                    if loopback_encrypt(lbdevice, self.config.password_base,
+                                        container_file):
+                        return 1
                 else:
                     return 1
 
-            # mount point check
-
             archive_mount = self.config.mount_dir + container_file
-            status_item('Mount Point ' + archive_mount)
-            rc = dir_validate(archive_mount, create=1, sudo=1)
-            if rc:
+
+            if mount_check(archive_mount):
                 return 1
 
             archive_map = '/dev/mapper/' + container_file

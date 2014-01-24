@@ -129,7 +129,7 @@ def dir_validate(dir, create=0, write=0, read=0, sudo=0):
         status_result('')
 
 
-def lb_exists(file):
+def loopback_exists(file):
     """ Determine if a loopback device has been allocated for a particular
     file.  If found, return it.  If not, return 0.  Note this is opposite
     normal functions where 0 means success. """
@@ -144,11 +144,9 @@ def lb_exists(file):
         return lbmatch
     else:
         status_result('MISSING', 2)
-        return 0
-    return 0
 
 
-def lb_next():
+def loopback_next():
     """ Return the name of the next free loopback device. """
     status_item('Allocate Loopback')
     p1 = subprocess.Popen(['sudo', 'losetup', '-f'], stdout=subprocess.PIPE)
@@ -177,8 +175,8 @@ def lb_setup(lbdevice, file):
         return 1
 
 
-def lb_encrypted(lbdevice, password_base, backup_dir, container_file,
-                 verbose=False):
+def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
+                       verbose=False):
     """ Perform tests to determine if the loopback device is a valid
     encrypted container. """
     status_item('Container 10 Meg Binary Check')
@@ -233,7 +231,7 @@ def lb_encrypted(lbdevice, password_base, backup_dir, container_file,
         return 1
 
 
-def lb_encrypt(lbdevice, password_base, container_file):
+def loopback_encrypt(lbdevice, password_base, container_file):
     """ Encrypt a loopback device. """
     status_item('Encrypting Volume')
     try:
@@ -275,7 +273,6 @@ def lb_encrypt(lbdevice, password_base, container_file):
         status_item('Encrypt Command')
         status_result('NOT FOUND', 3)
         return 1
-
 
 
 def config_read(config_file):
@@ -424,8 +421,6 @@ def config_validate(config):
         if rc:
             return 1
 
-    return 0
-
 
 def normalize_dir(dir):
     """ Add a trailing slash to a directory if none is present.  We need to
@@ -446,7 +441,14 @@ def mapper_check(lbdevice, archive_map, container_file, password_base):
         if mapper_container(lbdevice, container_file,
                             self.config.password_base):
             return 1
-    return 0
+
+
+def mount_check(archive_mount):
+    """ Determine if the directory where an encrypted container will be
+    mounted exists. """
+    status_item('Mount Point ' + archive_mount)
+    if dir_validate(archive_mount, create=1, sudo=1):
+        return 1
 
 
 def mapper_container(lbdevice, container_file, password_base):
@@ -514,7 +516,6 @@ def filesystem_check(archive_map):
         print 'error ' + str(e)
         status_result('NOT FOUND', 3)
         return 1
-    return 0
 
 
 def print_header(activity):
