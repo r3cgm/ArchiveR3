@@ -321,7 +321,7 @@ def config_validate(config):
     if rc:
         return 1
 
-    status_item('Password base')
+    status_item('Password Base')
     status_result('****************')
 
     status_item('Stale age (minutes)')
@@ -351,7 +351,7 @@ def config_validate(config):
         subprocess.check_call(['sudo', 'e2fsck'], stderr=devnull)
     except subprocess.CalledProcessError, e:
         if re.match('.*returned non-zero exit status 16.*', str(e)):
-            status_result('FOUND')
+            status_result('FOUND', 1)
         else:
             status_result('ERROR', 3)
             return 1
@@ -479,6 +479,28 @@ def map_container(lbdevice, container_file, password_base):
         status_item('Device Mount')
         status_result('BAILING', 3)
         return 1
+
+
+def fs_check(archive_map):
+    """ Verify the integrity of an ext4 filesystem within an encrypted
+    container. """
+    status_item('ext4 Filessytem Check')
+    devnull = open('/dev/null', 'w')
+    try:
+        subprocess.check_call(['sudo', 'e2fsck', '-n', archive_map],
+                              stdout=devnull, stderr=devnull)
+    except subprocess.CalledProcessError, e:
+        if re.match('.*status 8.*', str(e)):
+            status_result('INVALID', 3)
+            return 1
+        else:
+            # TODO what does a good filesystem look like?
+            status_result('VALID', 1)
+    except Exception, e:
+        print 'error ' + str(e)
+        status_result('NOT FOUND', 3)
+        return 1
+    return 0
 
 
 def print_header(activity):

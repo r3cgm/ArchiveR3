@@ -129,6 +129,7 @@ class backup:
                 status_result(str('%0.1f%%' % capacity), 1)
             else:
                 status_result(str('%0.1f%%' % capacity), 2)
+                # TODO need this code any more?
 #               status_item('Reprovision? (y/n)')
 #               confirm_reprovision = raw_input()
 #               status_item('Reprovisioning')
@@ -139,7 +140,7 @@ class backup:
                     return 1
                 return 1
 
-            # loopback device check
+            # loopback device check (exists)
 
             lbdevice = lb_exists(container)
             if not lbdevice:
@@ -148,7 +149,7 @@ class backup:
                 if rc:
                     return 1
 
-            # determine if loopback device is valid (encrypted)
+            # loopback device check (encrypted)
 
             rc = lb_encrypted(lbdevice, self.config.password_base,
                               self.config.backup_dir, container_file)
@@ -181,6 +182,12 @@ class backup:
                                    self.config.password_base)
                 if rc:
                     return 1
+
+            # filesystem check
+
+            rc = fs_check(archive_map)
+            if rc:
+                return 1
 
         return 0
 
