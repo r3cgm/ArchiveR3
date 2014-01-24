@@ -485,14 +485,15 @@ def normalize_dir(dir):
     return dir
 
 
-def mapper_check(lbdevice, archive_map, container_file, password_base):
+def mapper_check(lbdevice, archive_map, container_file, password_base,
+                 verbose=False):
     """ Verify we have a container mapping and offer to create one if not. """
     status_item('Map ' + archive_map)
     if os.path.islink('/dev/mapper/' + container_file):
         status_result('FOUND', 1)
     else:
         status_result('NOT FOUND', 2)
-        if mapper_container(lbdevice, container_file, password_base):
+        if mapper_container(lbdevice, container_file, password_base, verbose):
             return 1
 
 
@@ -552,11 +553,10 @@ def unmap(container_file):
     status_result('SUCCESS', 4)
 
 
-def mapper_container(lbdevice, container_file, password_base):
+def mapper_container(lbdevice, container_file, password_base, verbose=False):
     """ Map an encrypted container as a loopback device. """
     try:
-        print
-        subprocess.check_call('expect -c "spawn sudo tcplay ' +
+        p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                               '-m ' + container_file + ' ' +
                               '-d ' + lbdevice + "\n" +
                               "set timeout 1\n" +
@@ -565,13 +565,17 @@ def mapper_container(lbdevice, container_file, password_base):
                               container_file + '\\r' + "\n" +
                               "expect All\n" +
                               "expect eof\n" +
-                              '"', shell=True)
-        print
+                              '"', stdout=subprocess.PIPE, shell=True)
+        result = p1.communicate()[0]
+        if verbose:
+            print
+            print result
     except subprocess.CalledProcessError, e:
         status_item('Map Command')
         status_result('ERROR', 3)
         return 1
     except Exception, e:
+        print 'error ' + str(e)
         status_item('Map Command')
         status_result('NOT FOUND', 3)
         return 1

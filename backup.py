@@ -168,7 +168,7 @@ class backup:
             archive_map = '/dev/mapper/' + container_file
 
             if mapper_check(lbdevice, archive_map, container_file,
-                            self.config.password_base):
+                            self.config.password_base, self.args.verbose):
                 return 1
 
             if filesystem_check(archive_map):
