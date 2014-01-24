@@ -436,6 +436,19 @@ def normalize_dir(dir):
     return dir
 
 
+def map_check(lbdevice, archive_map, container_file, password_base):
+    """ Verify we have a container mapping and offer to create one if not. """
+    status_item('Map ' + archive_map)
+    if os.path.islink('/dev/mapper/' + container_file):
+        status_result('FOUND', 1)
+    else:
+        status_result('NOT FOUND', 2)
+        rc = map_container(lbdevice, container_file, self.config.password_base)
+        if rc:
+            return 1
+    return 0
+
+
 def map_container(lbdevice, container_file, password_base):
     """ Map an encrypted container as a loopback device. """
     status_item('Map container mount? (y/n)')

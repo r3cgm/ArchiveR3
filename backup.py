@@ -81,6 +81,9 @@ class backup:
             return 1
 
     def backup(self):
+        # TODO: make the definitions backing up these checks all consistent,
+        # in terms of who is reponsible for printing status info, the caller
+        # or the function, etc.
         for i, s in enumerate(self.config.archive_list):
             archive_dir = self.config.archive_list[i]
             status_item('Archive')
@@ -175,19 +178,14 @@ class backup:
             # mapper check
 
             archive_map = '/dev/mapper/' + container_file
-            status_item('Map ' + archive_map)
-            if os.path.islink('/dev/mapper/' + container_file):
-                status_result('FOUND', 1)
-            else:
-                status_result('NOT FOUND', 2)
-                rc = map_container(lbdevice, container_file,
-                                   self.config.password_base)
-                if rc:
-                    return 1
+            rc = map_check(lbdevice, archive_map, container_file,
+                           self.config.password_base)
+            if rc:
+                return 1
 
             # filesystem check
 
-            rc = fs_check(archive_map)
+            rc = fs_check(container_file)
             if rc:
                 return 1
 
