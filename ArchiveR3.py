@@ -211,7 +211,7 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
             status_result('INCORRECT OR NOT A VALID VOLUME', 3)
             return 1
         elif re.match('.*PBKDF2.*', result, re.DOTALL):
-            status_result('VERIFIED', 1)
+            status_result('SUCCESS', 1)
             if verbose:
                 print
                 print result
@@ -336,6 +336,17 @@ def config_validate(config):
     status_item('dd')
     try:
         subprocess.check_call(['dd', '--version'], stdout=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+        return 1
+    status_result('FOUND', 1)
+
+    status_item('(sudo) dmsetup')
+    try:
+        subprocess.check_call(['sudo', 'dmsetup', '-h'], stderr=devnull)
     except subprocess.CalledProcessError, e:
         status_result('ERROR', 3)
         return 1
@@ -481,8 +492,7 @@ def mapper_check(lbdevice, archive_map, container_file, password_base):
         status_result('FOUND', 1)
     else:
         status_result('NOT FOUND', 2)
-        if mapper_container(lbdevice, container_file,
-                            self.config.password_base):
+        if mapper_container(lbdevice, container_file, password_base):
             return 1
 
 
@@ -490,7 +500,7 @@ def mount_check(archive_map, archive_mount):
     """ Determine if the directory where an encrypted container will be
     mounted exists. """
     status_item('Mount Point ' + archive_mount)
-    if dir_validate(archive_mount, create=1, sudo=1):
+    if dir_validate(archive_mount, create=True, sudo=True):
         return 1
 
     status_item('Mount Check')
@@ -515,48 +525,68 @@ def mount_check(archive_map, archive_mount):
         status_result('SUCCESS', 1)
 
 
+def umount(mount_point):
+    """ Perform an umount operation to release a filesystem, typically during
+    cleanup.  Operation is performed via sudo. """
+    status_item('Unmount ' + mount_point)
+    try:
+        subprocess.check_call(['sudo', 'umount', mount_point])
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+    status_result('SUCCESS', 4)
+
+
+def unmap(container_file):
+    """ Unmap a dm-crypt volume. """
+    status_item('Unmap /dev/mapper' + container_file)
+    try:
+        subprocess.check_call(['sudo', 'dmsetup', 'remove', container_file])
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+    status_result('SUCCESS', 4)
+
+
 def mapper_container(lbdevice, container_file, password_base):
     """ Map an encrypted container as a loopback device. """
-    status_item('Map container mount? (y/n)')
-    if raw_input() == 'y':
-        try:
-            print
-            subprocess.check_call('expect -c "spawn sudo tcplay ' +
-                                  '-m ' + container_file + ' ' +
-                                  '-d ' + lbdevice + "\n" +
-                                  "set timeout 1\n" +
-                                  "expect Passphrase\n" +
-                                  "send " + password_base +
-                                  container_file + '\\r' + "\n" +
-                                  "expect All\n" +
-                                  "expect eof\n" +
-                                  '"', shell=True)
-            print
-        except subprocess.CalledProcessError, e:
-            status_item('Map Command')
-            status_result('ERROR', 3)
-            return 1
-        except Exception, e:
-            status_item('Map Command')
-            status_result('NOT FOUND', 3)
-            return 1
+    try:
+        print
+        subprocess.check_call('expect -c "spawn sudo tcplay ' +
+                              '-m ' + container_file + ' ' +
+                              '-d ' + lbdevice + "\n" +
+                              "set timeout 1\n" +
+                              "expect Passphrase\n" +
+                              "send " + password_base +
+                              container_file + '\\r' + "\n" +
+                              "expect All\n" +
+                              "expect eof\n" +
+                              '"', shell=True)
+        print
+    except subprocess.CalledProcessError, e:
+        status_item('Map Command')
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_item('Map Command')
+        status_result('NOT FOUND', 3)
+        return 1
 
-        status_item('Map /dev/mapper/' + container_file)
-        if os.path.islink('/dev/mapper/' + container_file):
-            status_result('FOUND', 1)
-        else:
-            status_result('FAILED', 3)
-            status_item('Container')
-            status_result('POSSIBLE CORRUPTION', 3)
-            status_item('')
-            status_result('debug manually or rm ' + container_file)
-            status_item('')
-            status_result('and let this utility recreate it')
-            return 1
-
+    status_item('Map /dev/mapper/' + container_file)
+    if os.path.islink('/dev/mapper/' + container_file):
+        status_result('FOUND', 1)
     else:
-        status_item('Device Mount')
-        status_result('BAILING', 3)
+        status_result('FAILED', 3)
+        status_item('Container')
+        status_result('POSSIBLE CORRUPTION', 3)
+        status_item('')
+        status_result('debug manually or rm ' + container_file)
+        status_item('')
+        status_result('and let this utility recreate it')
         return 1
 
 
@@ -635,7 +665,8 @@ def status_item(item):
 def status_result(result, type=0, no_newline=0):
     """ Show the results of the item currently being worked on.  Optionally,
     show a color-coded result based on the type parameter where 0 is normal,
-    1 is success (green), 2 is warning (yellow), and 3 is error (red). """
+    1 is success (green), 2 is warning (yellow), 3 is error (red), and 4 is
+    cleanup related (blue). """
     if type == 0:
         print result,
     elif type == 1:
@@ -644,6 +675,8 @@ def status_result(result, type=0, no_newline=0):
         print '\033[33m' + result + '\033[0m',
     elif type == 3:
         print '\033[31m' + result + '\033[0m',
+    elif type == 4:
+        print '\033[34m' + result + '\033[0m',
     else:
         print '\033[31mINVALID status_result() type specified\033[0m',
 

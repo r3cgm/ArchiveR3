@@ -184,6 +184,13 @@ class backup:
             if mount_check(archive_map, archive_mount):
                 return 1
 
+            # perform rsync
+
+            # cleanup
+
+            umount(archive_mount)
+            unmap(container_file)
+
         return 0
 
     def main(self):
