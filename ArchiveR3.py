@@ -401,6 +401,28 @@ def config_validate(config):
         return 1
     status_result('FOUND', 1)
 
+    status_item('(sudo) mount')
+    try:
+        subprocess.check_call(['sudo', 'mount'], stdout=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+        return 1
+    status_result('FOUND', 1)
+
+    status_item('(sudo) mountpoint')
+    try:
+        subprocess.check_call(['sudo', 'mountpoint', '/'], stdout=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+        return 1
+    status_result('FOUND', 1)
+
     status_item('pv')
     try:
         subprocess.check_call(['pv', '--version'], stdout=devnull)
@@ -420,6 +442,17 @@ def config_validate(config):
         return 1
     except Exception, e:
         status_result('NOT FOUND (install package "tcplay")', 3)
+        return 1
+    status_result('FOUND', 1)
+
+    status_item('(sudo) umount')
+    try:
+        subprocess.check_call(['sudo', 'umount', '-h'], stdout=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
         return 1
     status_result('FOUND', 1)
 
@@ -453,12 +486,33 @@ def mapper_check(lbdevice, archive_map, container_file, password_base):
             return 1
 
 
-def mount_check(archive_mount):
+def mount_check(archive_map, archive_mount):
     """ Determine if the directory where an encrypted container will be
     mounted exists. """
     status_item('Mount Point ' + archive_mount)
     if dir_validate(archive_mount, create=1, sudo=1):
         return 1
+
+    status_item('Mount Check')
+    p1 = subprocess.Popen(['sudo', 'mountpoint', archive_mount],
+                          stdout=subprocess.PIPE)
+    result = p1.communicate()[0]
+    if re.match('.*' + archive_mount + ' is a mountpoint.*', str(result)):
+        status_result('MOUNTED', 1)
+        return
+    else:
+        status_result('NOT MOUNTED', 2)
+        try:
+            status_item('Mounting')
+            subprocess.check_call(['sudo', 'mount',
+                                  archive_map, archive_mount])
+        except subprocess.CalledProcessError, e:
+            status_result('ERROR', 3)
+            return 1
+        except Exception, e:
+            status_result('NOT FOUND', 3)
+            return 1
+        status_result('SUCCESS', 1)
 
 
 def mapper_container(lbdevice, container_file, password_base):

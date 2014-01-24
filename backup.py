@@ -181,7 +181,7 @@ class backup:
 
             archive_mount = self.config.mount_dir + container_file
 
-            if mount_check(archive_mount):
+            if mount_check(archive_map, archive_mount):
                 return 1
 
         return 0
