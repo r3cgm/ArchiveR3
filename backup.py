@@ -165,23 +165,23 @@ class backup:
                 else:
                     return 1
 
-            archive_mount = self.config.mount_dir + container_file
-
-            if mount_check(archive_mount):
-                return 1
-
             archive_map = '/dev/mapper/' + container_file
 
             if mapper_check(lbdevice, archive_map, container_file,
                             self.config.password_base):
                 return 1
 
-            if filesystem_check(container_file):
+            if filesystem_check(archive_map):
                 status_item('!! REFORMAT FILESYSTEM? (y/n)')
                 if raw_input() == 'y':
-                    print 'formatting'
+                    if filesystem_format(archive_map, self.args.verbose):
+                        return 1
                 else:
-                    print 'no formatting'
+                    return 1
+
+            archive_mount = self.config.mount_dir + container_file
+
+            if mount_check(archive_mount):
                 return 1
 
         return 0

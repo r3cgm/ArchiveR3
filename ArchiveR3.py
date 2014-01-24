@@ -390,6 +390,17 @@ def config_validate(config):
         return 1
     status_result('FOUND', 1)
 
+    status_item('(sudo) mkfs.ext4')
+    try:
+        subprocess.check_call(['sudo', 'mkfs.ext4', '-V'], stderr=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+        return 1
+    status_result('FOUND', 1)
+
     status_item('pv')
     try:
         subprocess.check_call(['pv', '--version'], stdout=devnull)
@@ -498,7 +509,7 @@ def mapper_container(lbdevice, container_file, password_base):
 def filesystem_check(archive_map):
     """ Verify the integrity of an ext4 filesystem within an encrypted
     container. """
-    status_item('ext4 Filessytem Check')
+    status_item('ext4 Filesystem Check')
     devnull = open('/dev/null', 'w')
     try:
         subprocess.check_call(['sudo', 'e2fsck', '-n', archive_map],
@@ -507,13 +518,30 @@ def filesystem_check(archive_map):
         if re.match('.*status 8.*', str(e)):
             status_result('INVALID', 3)
             return 1
-        else:
-            # TODO what does a good filesystem look like?
-            status_result('VALID', 1)
     except Exception, e:
         print 'error ' + str(e)
         status_result('NOT FOUND', 3)
         return 1
+    status_result('VALID', 1)
+
+
+def filesystem_format(archive_map, verbose=False):
+    """ Create an ext4 filesystem on a mapped device. """
+    status_item('Formatting')
+    try:
+        p1 = subprocess.Popen(['sudo', 'mkfs.ext4', archive_map],
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result = p1.communicate()[0]
+        if verbose:
+            print
+            print result
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR ' + str(e), 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND ' + str(e), 3)
+        return 1
+    status_result('SUCCESS', 1)
 
 
 def print_header(activity):
