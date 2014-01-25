@@ -33,8 +33,11 @@ class backup:
             'invoking this tool with it.')
         parser.add_argument('config', action='store',
                             help='Specify an ArchiveR3 config file.')
-        parser.add_argument('-v', '--verbose', dest='verbose',
-                            action='store_true',
+        parser.add_argument('-c', '--cleanup', action='store_true',
+                            help='Do *not* perform normal cleanup operations '
+                            'after backing up such as unmounting and '
+                            'unmapping the archive container.')
+        parser.add_argument('-v', '--verbose', action='store_true',
                             help='Print the status of each file as it is '
                             'being processed.  Otherwise, a progress dot is '
                             'printed for every 100 files processed.  '
@@ -137,20 +140,17 @@ class backup:
 #               status_item('Reprovision? (y/n)')
 #               confirm_reprovision = raw_input()
 #               status_item('Reprovisioning')
-                rc = self.create_archive(self.config.archive_list[i],
-                                         container, self.config.backup_dir,
-                                         arc_block)
-                if rc:
+                if self.create_archive(self.config.archive_list[i],
+                                       container, self.config.backup_dir,
+                                       arc_block):
                     return 1
                 return 1
 
-            # loopback device check (exists)
-
             lbdevice = loopback_exists(container)
+
             if not lbdevice:
                 lbdevice = loopback_next()
-                rc = lb_setup(lbdevice, container)
-                if rc:
+                if lb_setup(lbdevice, container):
                     return 1
 
             if loopback_encrypted(lbdevice, self.config.password_base,
@@ -185,10 +185,9 @@ class backup:
 
             # perform rsync
 
-            # cleanup
-
-            umount(archive_mount)
-            unmap(container_file)
+            if not self.args.cleanup:
+                umount(archive_mount)
+                unmap(container_file)
 
         return 0
 
