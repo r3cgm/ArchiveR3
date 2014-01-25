@@ -86,41 +86,35 @@ class backup:
         # in terms of who is reponsible for printing status info, the caller
         # or the function, etc.
         for i, s in enumerate(self.config.archive_list):
+
             archive_dir = self.config.archive_list[i]
             status_item('Archive')
             status_result(archive_dir)
-
-            status_item('Archive Size (512 byte blocks)')
-            arc_block = dir_size(archive_dir, block_size=512)
-            status_result(str(arc_block) + ' (' + size(arc_block) + ')')
 
             container_dir = self.config.backup_dir
             container_file = self.config.archive_list[i].split('/')[-2] + \
                 '.archive'
             container = container_dir + container_file
 
-            status_item('Container')
-            status_result(container)
-
-            # existence check
-
             status_item(container_file)
             if os.path.isfile(container):
-                status_result('FOUND', 1)
+                status_result('CONTAINER FOUND', 1)
             else:
-                status_result('NOT FOUND', 2)
-                rc = self.create_archive(self.config.archive_list[i],
-                                         container, self.config.backup_dir,
-                                         arc_block)
-                if rc:
+                status_result('CONTAINER NOT FOUND', 2)
+                if self.create_archive(self.config.archive_list[i],
+                                       container, self.config.backup_dir,
+                                       arc_block):
                     return 1
 
-            status_item('Container Size')
+            arc_block = dir_size(archive_dir, block_size=512)
             container_size = os.path.getsize(container)
-            status_result(str(container_size) + ' (' +
-                          size(container_size) + ')')
 
-            # capacity check
+            if self.args.verbose:
+                status_item('Archive Size')
+                status_result(str(arc_block) + ' (' + size(arc_block) + ')')
+                status_item('Container Size')
+                status_result(str(container_size) + ' (' +
+                              size(container_size) + ')')
 
             status_item('Capacity')
             if container_size:
@@ -131,9 +125,14 @@ class backup:
                 capacity = 100
 
             if capacity < self.config.provision_capacity_reprovision:
-                status_result(str('%0.1f%%' % capacity), 1)
+                status_result(str('%0.1f%%' % capacity), 1, no_newline=True)
+                status_result('(' + size(arc_block) + ' of ' +
+                              size(container_size) + ')')
             else:
-                status_result(str('%0.1f%%' % capacity), 2)
+                status_result(str('%0.1f%%' % capacity), 2, no_newline=True)
+                status_result('(' + size(arc_block) + ' of ' +
+                              size(container_size) + ')')
+
                 # TODO need this code any more?
 #               status_item('Reprovision? (y/n)')
 #               confirm_reprovision = raw_input()
