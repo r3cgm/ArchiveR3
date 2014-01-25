@@ -53,7 +53,7 @@ class backup:
         """ Create an encrypted container.  The resulting containersize is only
         accurate to the nearest megabyte.  Return 1 if any problems or 0 for
         success. """
-        status_item('Create new archive? (y/n)')
+        status_item('!! CREATE CONTAINER? (y/n)')
         if raw_input() == 'y':
             archive_size = int(float(arc_block) /
                                float(self.config.provision_capacity_percent)
@@ -64,6 +64,7 @@ class backup:
             status_item('Generating Container')
             status_result('IN PROGRESS', 2)
             try:
+                print
                 subprocess.check_call('dd if=/dev/zero bs=1048576 ' +
                                       'status=none ' +
                                       'count=' + str(archive_size_m) +
@@ -99,6 +100,8 @@ class backup:
                 '.archive'
             container = container_dir + container_file
 
+            arc_block = dir_size(archive_dir, block_size=512)
+
             status_item(container_file)
             if os.path.isfile(container):
                 status_result('CONTAINER FOUND', 1)
@@ -109,7 +112,6 @@ class backup:
                                        arc_block):
                     return 1
 
-            arc_block = dir_size(archive_dir, block_size=512)
             container_size = os.path.getsize(container)
 
             if self.args.verbose:
@@ -149,17 +151,20 @@ class backup:
             lbdevice = loopback_exists(container)
 
             if not lbdevice:
+                loopback_cleanup(container)
                 lbdevice = loopback_next()
+                if not lbdevice:
+                    return 1
                 if loopback_setup(lbdevice, container):
                     return 1
 
             if loopback_encrypted(lbdevice, self.config.password_base,
                                   self.config.backup_dir, container_file,
                                   self.args.verbose):
-                status_item('!! RECREATE ARCHIVE? (y/n)')
+                status_item('!! (RE)ENCRYPT CONTAINER? (y/n)')
                 if raw_input() == 'y':
                     if loopback_encrypt(lbdevice, self.config.password_base,
-                                        container_file):
+                                        container_file, self.args.verbose):
                         return 1
                 else:
                     return 1

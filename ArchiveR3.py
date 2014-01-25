@@ -132,9 +132,8 @@ def loopback_exists(file):
     """ Determine if a loopback device has been allocated for a particular
     file.  If found, return it.  If not, return 0.  Note this is opposite
     normal functions where 0 means success. """
-    p1 = subprocess.Popen(['sudo', 'losetup', '--associated', file],
-                          stdout=subprocess.PIPE)
-    lbmatch = p1.communicate()[0]
+    lbmatch = subprocess.Popen(['sudo', 'losetup', '--associated', file],
+                               stdout=subprocess.PIPE).communicate()[0]
     lbmatch = ''.join(lbmatch.split())
     if re.match('.*\(' + file + '\).*', str(lbmatch)):
         lbmatch = re.sub(':.*$', '', lbmatch)
@@ -143,17 +142,30 @@ def loopback_exists(file):
         return lbmatch
 
 
+def loopback_cleanup(file):
+    """ Attempt to clean up any residual loopback devices associated with a
+    particular file which are not in use. """
+    matches = subprocess.Popen(['sudo', 'losetup', '--all'],
+                               stdout=subprocess.PIPE).communicate()[0]
+    for match in str(matches).splitlines():
+        if re.match('.*\(' + file + '\)', match):
+            loopback_old = re.sub(':.*$', '', match)
+            status_item('Removing Old Loopback Device')
+            subprocess.Popen(['sudo', 'losetup', '-d', loopback_old])
+            status_result(loopback_old, 4)
+
+
 def loopback_next():
     """ Return the name of the next free loopback device. """
-    p1 = subprocess.Popen(['sudo', 'losetup', '-f'], stdout=subprocess.PIPE)
-    lbdevice = p1.communicate()[0]
-    lbdevice = ''.join(lbdevice.split())
-    if lbdevice:
-        return lbdevice
-    else:
+    result = subprocess.Popen(['sudo', 'losetup', '-f'],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT).communicate()[0]
+    if re.match('.*could not find any free loop device.*', result):
         status_item('Allocate Loopback')
-        status_result('FAILED', 3)
-        return 0
+        status_result('NO FREE DEVICES', 3)
+        return
+    elif result:
+        return result.strip()
 
 
 def loopback_setup(lbdevice, file):
@@ -203,7 +215,7 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
     if sum:
         status_result('BINARY CONFIRMED', 1)
     else:
-        status_result('ALL ZEROS', 3)
+        status_result('INVALID', 2)
         return 1
 
     status_item('Password Test')
@@ -241,7 +253,7 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
         return 1
 
 
-def loopback_encrypt(lbdevice, password_base, container_file):
+def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
     """ Encrypt a loopback device. """
     status_item('Encrypting Volume')
     try:
@@ -257,11 +269,18 @@ def loopback_encrypt(lbdevice, password_base, container_file):
                               container_file + '\\r' + "\n" +
                               'expect proceed' + "\n" +
                               'send y' + '\\r' + "\n" +
-                              'expect done' + "\n" +
                               "expect eof\n" +
+                              'expect done' + "\n" +
                               '"', stdout=subprocess.PIPE, shell=True)
-        for line in iter(p1.stdout.readline, b''):
+
+#       if verbose:
+        # TODO: for some reason this *must* be printed out or else we fail
+        # to encrypt properly.
+        print
+        print
+        for line in iter(p1.stdout.readline, ''):
             print(">>> " + line.rstrip())
+        print
 
 # TODO
 #       if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
@@ -274,15 +293,12 @@ def loopback_encrypt(lbdevice, password_base, container_file):
 #           status_result('SUCCESS', 1)
 
     except subprocess.CalledProcessError, e:
-        status_result('FAILURE')
-        status_item('Encrypt Command')
-        status_result('ERROR', 3)
+        status_result('ENCRYPT ERROR', 3)
         return 1
     except Exception, e:
-        status_result('FAILURE')
-        status_item('Encrypt Command')
-        status_result('NOT FOUND', 3)
+        status_result('ENCRYPT NOT FOUND ' + str(e), 3)
         return 1
+    status_result('ENCRYPTED', 4)
 
 
 def config_read(config_file):
@@ -550,7 +566,7 @@ def umount(mount_point):
 
 def unmap(container_file):
     """ Unmap a dm-crypt volume. """
-    status_item('/dev/mapper' + container_file)
+    status_item('/dev/mapper/' + container_file)
     try:
         subprocess.check_call(['sudo', 'dmsetup', 'remove', container_file])
     except subprocess.CalledProcessError, e:
@@ -564,33 +580,33 @@ def unmap(container_file):
 def mapper_container(lbdevice, container_file, password_base, verbose=False):
     """ Map an encrypted container as a loopback device. """
     try:
-        p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
-                              '-m ' + container_file + ' ' +
-                              '-d ' + lbdevice + "\n" +
-                              "set timeout 1\n" +
-                              "expect Passphrase\n" +
-                              "send " + password_base +
-                              container_file + '\\r' + "\n" +
-                              "expect All\n" +
-                              "expect eof\n" +
-                              '"', stdout=subprocess.PIPE, shell=True)
-        result = p1.communicate()[0]
+        result = subprocess.Popen('expect -c "spawn sudo tcplay ' +
+                                  '-m ' + container_file + ' ' +
+                                  '-d ' + lbdevice + "\n" +
+                                  "set timeout 1\n" +
+                                  "expect Passphrase\n" +
+                                  "send " + password_base +
+                                  container_file + '\\r' + "\n" +
+                                  "expect All\n" +
+                                  "expect eof\n" +
+                                  '"', stdout=subprocess.PIPE,
+                                  shell=True).communicate()[0]
         if verbose:
             print
             print result
+
     except subprocess.CalledProcessError, e:
-        status_result('COMMAND ERROR', 3)
+        status_result('COMMAND ERROR ' + str(e), 3)
         return 1
     except Exception, e:
-        print 'error ' + str(e)
-        status_result('COMMAND NOT FOUND', 3)
+        status_result('COMMAND NOT FOUND ' + str(e), 3)
         return 1
 
     if os.path.islink('/dev/mapper/' + container_file):
         status_result('MAPPED', 4)
     else:
         status_result('MAPPING FAILURE', 3)
-        status_item('Container')
+        status_item('')
         status_result('POSSIBLE CORRUPTION', 3)
         status_item('')
         status_result('debug manually or rm ' + container_file)
@@ -602,25 +618,25 @@ def mapper_container(lbdevice, container_file, password_base, verbose=False):
 def filesystem_check(archive_map):
     """ Verify the integrity of an ext4 filesystem within an encrypted
     container. """
-    status_item('ext4 Filesystem Check')
+    status_item('Filesystem Check')
     devnull = open('/dev/null', 'w')
     try:
         subprocess.check_call(['sudo', 'e2fsck', '-n', archive_map],
                               stdout=devnull, stderr=devnull)
     except subprocess.CalledProcessError, e:
         if re.match('.*status 8.*', str(e)):
-            status_result('INVALID', 3)
+            status_result('FILESYSTEM INVALID', 2)
             return 1
     except Exception, e:
         print 'error ' + str(e)
-        status_result('NOT FOUND', 3)
+        status_result('COMMAND NOT FOUND', 3)
         return 1
     status_result('VALID', 1)
 
 
 def filesystem_format(archive_map, verbose=False):
     """ Create an ext4 filesystem on a mapped device. """
-    status_item('Formatting')
+    status_item('Filesystem Create')
     try:
         p1 = subprocess.Popen(['sudo', 'mkfs.ext4', archive_map],
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -629,12 +645,12 @@ def filesystem_format(archive_map, verbose=False):
             print
             print result
     except subprocess.CalledProcessError, e:
-        status_result('ERROR ' + str(e), 3)
+        status_result('FORMAT ERROR ' + str(e), 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND ' + str(e), 3)
+        status_result('FORMAT COMMAND NOT FOUND ' + str(e), 3)
         return 1
-    status_result('SUCCESS', 1)
+    status_result('FORMAT SUCCESS', 1)
 
 
 def print_header(activity):
