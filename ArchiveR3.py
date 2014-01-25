@@ -159,19 +159,33 @@ def loopback_next():
         return 0
 
 
-def lb_setup(lbdevice, file):
+def loopback_setup(lbdevice, file):
     """ Associate a loopback device with a file.  Return 1 if failure or 0
     if successful. """
     status_item('Loopback Setup')
     result = subprocess.Popen(['sudo', 'losetup', '--verbose', lbdevice, file],
                               stdout=subprocess.PIPE).communicate()[0]
     if re.match('.*Loop device is ' + str(lbdevice) + '.*', result):
-        status_result(str(os.path.basename(file)) + ' > ' + lbdevice, 1)
+        status_result(str(os.path.basename(file)) + ' > ' + lbdevice, 4)
         return 0
     else:
         status_result('FAILED', 3)
         print 'did not match: ' + result
         return 1
+
+
+def loopback_delete(lbdevice):
+    """ Delete the specified loopback device. """
+    status_item(lbdevice)
+    try:
+        subprocess.check_call(['sudo', 'losetup', '--detach', lbdevice])
+    except subprocess.CalledProcessError, e:
+        status_result('LOOPBACK DEALLOCATION ERROR')
+        return 1
+    except Exception, e:
+        status_result('LOOPBACK DEALLOCATION NOT FOUND')
+        return 1
+    status_result('LOOPBACK DEALLOCATED', 4)
 
 
 def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
@@ -539,15 +553,15 @@ def umount(mount_point):
 
 def unmap(container_file):
     """ Unmap a dm-crypt volume. """
-    status_item('Unmap /dev/mapper' + container_file)
+    status_item('/dev/mapper' + container_file)
     try:
         subprocess.check_call(['sudo', 'dmsetup', 'remove', container_file])
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('ERROR UNMAPPING', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
-    status_result('SUCCESS', 4)
+        status_result('UNMAP COMMAND MISSING', 3)
+    status_result('UNMAPPED', 4)
 
 
 def mapper_container(lbdevice, container_file, password_base, verbose=False):

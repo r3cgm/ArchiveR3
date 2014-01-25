@@ -150,7 +150,7 @@ class backup:
 
             if not lbdevice:
                 lbdevice = loopback_next()
-                if lb_setup(lbdevice, container):
+                if loopback_setup(lbdevice, container):
                     return 1
 
             if loopback_encrypted(lbdevice, self.config.password_base,
@@ -188,6 +188,7 @@ class backup:
             if not self.args.cleanup:
                 umount(archive_mount)
                 unmap(container_file)
+                loopback_delete(lbdevice)
 
         return 0
 
