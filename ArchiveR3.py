@@ -132,29 +132,26 @@ def loopback_exists(file):
     """ Determine if a loopback device has been allocated for a particular
     file.  If found, return it.  If not, return 0.  Note this is opposite
     normal functions where 0 means success. """
-    status_item('Container > Loopback Device')
     p1 = subprocess.Popen(['sudo', 'losetup', '--associated', file],
                           stdout=subprocess.PIPE)
     lbmatch = p1.communicate()[0]
     lbmatch = ''.join(lbmatch.split())
     if re.match('.*\(' + file + '\).*', str(lbmatch)):
         lbmatch = re.sub(':.*$', '', lbmatch)
+        status_item('Container > Loopback Device')
         status_result('ASSOCIATED ' + lbmatch, 1)
         return lbmatch
-    else:
-        status_result('MISSING', 2)
 
 
 def loopback_next():
     """ Return the name of the next free loopback device. """
-    status_item('Allocate Loopback')
     p1 = subprocess.Popen(['sudo', 'losetup', '-f'], stdout=subprocess.PIPE)
     lbdevice = p1.communicate()[0]
     lbdevice = ''.join(lbdevice.split())
     if lbdevice:
-        status_result(lbdevice, 1)
         return lbdevice
     else:
+        status_item('Allocate Loopback')
         status_result('FAILED', 3)
         return 0
 
@@ -162,11 +159,11 @@ def loopback_next():
 def loopback_setup(lbdevice, file):
     """ Associate a loopback device with a file.  Return 1 if failure or 0
     if successful. """
-    status_item('Loopback Setup')
+    status_item(lbdevice)
     result = subprocess.Popen(['sudo', 'losetup', '--verbose', lbdevice, file],
                               stdout=subprocess.PIPE).communicate()[0]
     if re.match('.*Loop device is ' + str(lbdevice) + '.*', result):
-        status_result(str(os.path.basename(file)) + ' > ' + lbdevice, 4)
+        status_result('LOOPBACK ALLOCATED', 4)
         return 0
     else:
         status_result('FAILED', 3)
