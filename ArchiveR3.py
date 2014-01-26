@@ -472,6 +472,17 @@ def config_validate(config):
         return 1
     status_result('FOUND', 1)
 
+    status_item('(sudo) rsync')
+    try:
+        subprocess.check_call(['sudo', 'rsync', '--version'], stdout=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+        return 1
+    status_result('FOUND', 1)
+
     status_item('(sudo) tcplay')
     try:
         subprocess.check_call(['sudo', 'tcplay', '-v'], stdout=devnull)
@@ -685,6 +696,41 @@ def section_break():
 
 def status_item(item):
     sys.stdout.write('%38s: ' % item)
+
+
+def sync(source, target):
+    """ Synchronize files from a source to a target location. """
+    status_item('Sync')
+    try:
+        p1 = subprocess.Popen('sudo rsync ' +
+                              '--bwlimit 1300 ' +
+                              '--compress ' +
+                              '--recursive ' +
+                              '--links ' +
+                              '--perms ' +
+                              '--times ' +
+                              '--group ' +
+                              '--owner ' +
+                              '--partial ' +
+                              '--verbose ' +
+                              '--progress ' +
+                              '--delete ' +
+                              '--delete-delay ' +
+                              '--max-delete=100 ' +
+                              '--human-readable ' +
+                              '--itemize-changes ' +
+                              source.rstrip('/') + ' ' + target,
+                              shell=True)
+
+# TODO
+#                             '--log-file=$LOGFILE.$i.rsync ' +
+    except subprocess.CalledProcessError, e:
+        status_result('ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('NOT FOUND', 3)
+        return 1
+    status_result('SUCCESS', 1)
 
 
 def status_result(result, type=0, no_newline=0):

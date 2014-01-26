@@ -188,7 +188,8 @@ class backup:
             if mount_check(archive_map, archive_mount):
                 return 1
 
-            # perform rsync
+            if sync(archive_dir, archive_mount):
+                return 1
 
             if not self.args.cleanup:
                 umount(archive_mount)
