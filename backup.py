@@ -22,6 +22,8 @@ class backup:
 
     def init_vars(self):
         """ Initialize class variables. """
+        # lost storage due to overhead of encrypted container
+        self.container_overhead = 1471488
 
     def args_process(self):
         """ Process command-line arguments. """
@@ -113,6 +115,10 @@ class backup:
                     return 1
 
             container_size = os.path.getsize(container)
+            if not container_size:
+                status_item('Container Size')
+                status_result('PROBE FAILED', 3)
+                return 1
 
             if self.args.verbose:
                 status_item('Archive Size')
@@ -121,32 +127,38 @@ class backup:
                 status_result(str(container_size) + ' (' +
                               size(container_size) + ')')
 
-            status_item('Capacity')
-            if container_size:
-                capacity = float(arc_block) / float(container_size) * 100
-                if capacity > 100:
-                    capacity = 100
-            else:
-                capacity = 100
+            status_item('Capacity Estimated')
+            container_size_net = container_size - self.container_overhead
+            capacity_est = float(arc_block) / float(container_size_net) * 100
+            if capacity_est > 100:
+                 capacity_est = 100
 
-            if capacity < self.config.provision_capacity_reprovision:
-                status_result(str('%0.1f%%' % capacity), 1, no_newline=True)
-                status_result('(' + size(arc_block) + ' of ' +
-                              size(container_size) + ')')
+            if capacity_est < self.config.provision_capacity_reprovision:
+                capacity_est_condition = 1
             else:
-                status_result(str('%0.1f%%' % capacity), 2, no_newline=True)
-                status_result('(' + size(arc_block) + ' of ' +
-                              size(container_size) + ')')
+                capacity_est_condition = 2
 
-                # TODO need this code any more?
-#               status_item('Reprovision? (y/n)')
-#               confirm_reprovision = raw_input()
-#               status_item('Reprovisioning')
+            status_result(str('%0.2f%%' % capacity_est),
+                          capacity_est_condition, no_newline=True)
+            status_result(str(arc_block) + '/' + str(container_size_net) + ' '
+                          + size(arc_block) + '/' + size(container_size_net))
+
+            if capacity_est_condition == 2:
+                status_item('Reprovision? (y/n)')
+                confirm_reprovision = raw_input()
+                # TODO functionalize the next 3 lines
+                umount(archive_mount)
+                unmap(container_file)
+                loopback_delete(lbdevice)
                 if self.create_archive(self.config.archive_list[i],
                                        container, self.config.backup_dir,
-                                       arc_block):
+                                       arc_block + self.container_overhead):
                     return 1
-                return 1
+                else:
+                    status_item('Reprovision')
+                    status_result('SUCCESS BUT NEED TO RESTART AND MAKE SURE' +
+                    'NOT RUNNING WITH --cleanup OPTION', 2)
+                    return 1
 
             lbdevice = loopback_exists(container)
 
@@ -187,6 +199,52 @@ class backup:
 
             if mount_check(archive_map, archive_mount):
                 return 1
+
+            stat = os.statvfs(archive_mount)
+            cryptfs_size = str(stat.f_blocks * stat.f_frsize)
+            if not cryptfs_size:
+                status_item('Encrypted Filesystem Size')
+                status_result('PROBE FAILED', 3)
+                return 1
+
+            status_item('Capacity Actual')
+            capacity_act = float(arc_block) / float(cryptfs_size) * 100
+            if capacity_act > 100:
+                capacity_act = 100
+
+            if capacity_act < self.config.provision_capacity_reprovision:
+                capacity_act_condition = 1
+            else:
+                capacity_act_condition = 2
+
+            status_result(str('%0.2f%%' % capacity_act),
+                          capacity_act_condition, no_newline=True)
+            status_result(str(arc_block) + '/' + cryptfs_size + ' ' +
+                          size(arc_block) + '/' + size(int(cryptfs_size)))
+
+            if capacity_act_condition == 2:
+                status_item('Reprovision? (y/n)')
+                confirm_reprovision = raw_input()
+                # TODO functionalize the next 3 lines
+                umount(archive_mount)
+                unmap(container_file)
+                loopback_delete(lbdevice)
+                if self.create_archive(self.config.archive_list[i],
+                                       container, self.config.backup_dir,
+                                       arc_block + self.container_overhead):
+                    return 1
+                else:
+                    status_item('Reprovision')
+                    status_result('SUCCESS BUT NEED TO RESTART AND MAKE SURE' +
+                    'NOT RUNNING WITH --cleanup OPTION', 2)
+                    return 1
+
+# TODO: cleanup
+#           status_result('free ' + str(stat.f_bavail * stat.f_frsize))
+#           status_result('total ' + str(stat.f_blocks * stat.f_frsize))
+#           status_result('avail ' + str((stat.f_blocks - stat.f_bfree) * \
+#                         stat.f_frsize))
+#           status_result(str(get_fs_freespace(archive_mount)))
 
             if sync(archive_dir, archive_mount):
                 return 1

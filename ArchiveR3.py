@@ -273,9 +273,9 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
                               'expect done' + "\n" +
                               '"', stdout=subprocess.PIPE, shell=True)
 
-#       if verbose:
         # TODO: for some reason this *must* be printed out or else we fail
         # to encrypt properly.
+#       if verbose:
         print
         print
         for line in iter(p1.stdout.readline, ''):
