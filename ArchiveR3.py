@@ -73,7 +73,7 @@ def dir_validate(dir, create=0, write=0, read=0, sudo=0):
                     os.makedirs(dir)
 
                 if os.path.exists(dir):
-                    status_result('CREATED', 1, no_newline=1)
+                    status_result('CREATED', 1, no_newline=True)
                 else:
                     status_result('CREATION FAILED', 3)
                     return 1
@@ -104,7 +104,7 @@ def dir_validate(dir, create=0, write=0, read=0, sudo=0):
         file.close()
         if os.path.isfile(dir + test_file):
             os.remove(dir + test_file)
-            status_result('WRITEABLE', 1, no_newline=1)
+            status_result('WRITEABLE', 1, no_newline=True)
         else:
             status_result('NOT WRITEABLE', 3)
             return 1
@@ -115,7 +115,7 @@ def dir_validate(dir, create=0, write=0, read=0, sudo=0):
                 file = open(dir + filename, 'r')
                 test_byte = file.read(1)
                 if test_byte:
-                    status_result('READABLE', 1, no_newline=1)
+                    status_result('READABLE', 1, no_newline=True)
                 else:
                     status_result('NOT READABLE', 3)
                     return 1
@@ -213,12 +213,11 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
         integer = struct.unpack('i', integer_file)[0]
     file.close()
     if sum:
-        status_result('BINARY CONFIRMED', 1)
+        status_result('BINARY,', 1, no_newline=True)
     else:
         status_result('INVALID', 2)
         return 1
 
-    status_item('Password Test')
     try:
         p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                               '-i -d ' + lbdevice + "\n" +
@@ -231,18 +230,18 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
         result = p1.communicate()[0]
         if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
                     result, re.DOTALL):
-            status_result('INCORRECT OR NOT A VALID VOLUME', 3)
+            status_result('BAD PASSWORD / CORRUPTED', 3)
             return 1
         elif re.match('.*PBKDF2.*', result, re.DOTALL):
-            status_result('SUCCESS', 1)
+            status_result('PASSWORD VERIFIED', 1)
             if verbose:
                 print
                 print result
         else:
-            status_result('UNKNOWN CONDITION', 3)
+            status_result('UNKNOWN PASSWORD CONDITION', 3)
             return 1
     except subprocess.CalledProcessError, e:
-        status_result('FAILURE')
+        status_result('PASSWORD FAILURE')
         status_item('Map Command')
         status_result('ERROR', 3)
         return 1
@@ -347,7 +346,10 @@ def config_validate(config):
         return 1
 
     status_item('Password Base')
-    status_result('****************')
+    if config.password_base:
+        status_result('FOUND', 1)
+    else:
+        status_result('MISSING', 3)
 
     status_item('Stale age (minutes)')
     status_result(str(config.stale_age) + ' !UNUSED!')
@@ -360,150 +362,142 @@ def config_validate(config):
 
     devnull = open('/dev/null', 'w')
 
-    status_item('dd')
+    status_item('Dependencies (* = sudo)')
     try:
         subprocess.check_call(['dd', '--version'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('dd ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
+        status_result('dd MISSING', 3)
         return 1
-    status_result('FOUND', 1)
+    status_result('dd', 1, no_newline=True)
 
-    status_item('(sudo) dmsetup')
     try:
         subprocess.check_call(['sudo', 'dmsetup', '-h'], stderr=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('*dmsetup ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
+        status_result('*dmsetup MISSING', 3)
         return 1
-    status_result('FOUND', 1)
+    status_result('*dmsetup', 1, no_newline=True)
 
-    status_item('(sudo) e2fsck')
     try:
         subprocess.check_call(['sudo', 'e2fsck'], stderr=devnull)
     except subprocess.CalledProcessError, e:
         if re.match('.*returned non-zero exit status 16.*', str(e)):
-            status_result('FOUND', 1)
+            status_result('*e2fsck', 1, no_newline=True)
         else:
-            status_result('ERROR', 3)
+            status_result('*e2fsck ERROR', 3)
             return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
+        status_result('*e2fsck MISSING', 3)
         return 1
 
-    status_item('expect')
     try:
         subprocess.check_call(['expect', '-v'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('expect ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND (install package "expect")', 3)
+        status_result('expect MISSING', 3)
         return 1
-    status_result('FOUND', 1)
+    status_result('expect', 1, no_newline=True)
 
-    status_item('(sudo) losetup')
     try:
         subprocess.check_call(['sudo', 'losetup', '-h'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('*losetup ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
+        status_result('*losetup MISSING', 3)
         return 1
-    status_result('FOUND', 1)
+    status_result('*losetup', 1)
 
-    status_item('(sudo) mkdir')
+    status_item('')
+
     try:
         subprocess.check_call(['sudo', 'mkdir', '--help'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('*mkdir ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
+        status_result('*mkdir MISSING', 3)
         return 1
-    status_result('FOUND', 1)
+    status_result('*mkdir', 1, no_newline=True)
 
-    status_item('(sudo) mkfs.ext4')
     try:
         subprocess.check_call(['sudo', 'mkfs.ext4', '-V'], stderr=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('*mkfs.ext4 ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
+        status_result('*mkfs.ext4 MISSING', 3)
         return 1
-    status_result('FOUND', 1)
+    status_result('*mkfs.ext4', 1, no_newline=True)
 
-    status_item('(sudo) mount')
     try:
         subprocess.check_call(['sudo', 'mount'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('*mount ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
+        status_result('*mount MISSING', 3)
         return 1
-    status_result('FOUND', 1)
+    status_result('*mount', 1, no_newline=True)
 
-    status_item('(sudo) mountpoint')
     try:
         subprocess.check_call(['sudo', 'mountpoint', '/'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('*mountpoint ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
+        status_result('*mountpoint MISSING', 3)
         return 1
-    status_result('FOUND', 1)
+    status_result('*mountpoint', 1, no_newline=True)
 
-    status_item('pv')
     try:
         subprocess.check_call(['pv', '--version'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('pv ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND (install package "pv")', 3)
+        status_result('pv MISSING', 3)
         return 1
-    status_result('FOUND', 1)
+    status_result('pv', 1)
 
-    status_item('(sudo) rsync')
+    status_item('')
+
     try:
         subprocess.check_call(['sudo', 'rsync', '--version'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('*rsync ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
+        status_result('*rsync MISSING', 3)
         return 1
-    status_result('FOUND', 1)
+    status_result('*rsync', 1, no_newline=True)
 
-    status_item('(sudo) tcplay')
     try:
         subprocess.check_call(['sudo', 'tcplay', '-v'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('*tcplay ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND (install package "tcplay")', 3)
+        status_result('*tcplay MISSING', 3)
         return 1
-    status_result('FOUND', 1)
+    status_result('*tcplay', 1, no_newline=True)
 
-    status_item('(sudo) umount')
     try:
         subprocess.check_call(['sudo', 'umount', '-h'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('ERROR', 3)
+        status_result('*umount ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
+        status_result('*umount MISSING', 3)
         return 1
-    status_result('FOUND', 1)
+    status_result('*umount', 1)
 
     config.archive_list = config.archives.split()
     for i, s in enumerate(config.archive_list):
@@ -733,7 +727,7 @@ def sync(source, target):
     status_result('SUCCESS', 1)
 
 
-def status_result(result, type=0, no_newline=0):
+def status_result(result, type=0, no_newline=False):
     """ Show the results of the item currently being worked on.  Optionally,
     show a color-coded result based on the type parameter where 0 is normal,
     1 is success (green), 2 is warning (yellow), 3 is error (red), and 4 is

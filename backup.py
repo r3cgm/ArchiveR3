@@ -8,6 +8,7 @@ except ImportError, e:
     print e
     print 'Hint: try running "pip install hurry.filesize"'
     sys.exit(1)
+import math
 import re
 import subprocess
 import sys
@@ -24,6 +25,7 @@ class backup:
         """ Initialize class variables. """
         # lost storage due to overhead of encrypted container
         self.container_overhead = 1471488
+        self.container_overhead_m = 2
 
     def args_process(self):
         """ Process command-line arguments. """
@@ -60,18 +62,27 @@ class backup:
             archive_size = int(float(arc_block) /
                                float(self.config.provision_capacity_percent)
                                * 100)
-            archive_size_m = int(float(archive_size) / 1024 / 1024)
-            status_item('Required Archive Size')
+            archive_size_m = int(math.ceil(float(archive_size) / 1024 / 1024))
+            status_item('Archive Size')
+            status_result(str(arc_block) + ' (' + size(arc_block) + ')')
+            status_item('Provisioned Archive Size')
             status_result(str(archive_size) + ' (' + size(archive_size) + ')')
+            status_item('Required Container Size')
+            container_size_needed = archive_size + self.container_overhead
+            container_size_needed_m = archive_size_m + \
+                self.container_overhead_m
+            status_result(str(container_size_needed_m * 1048576) + ' (' +
+                          str(container_size_needed_m) + 'M)')
             status_item('Generating Container')
             status_result('IN PROGRESS', 2)
             try:
                 print
                 subprocess.check_call('dd if=/dev/zero bs=1048576 ' +
                                       'status=none ' +
-                                      'count=' + str(archive_size_m) +
-                                      ' | pv -s ' + str(archive_size) + ' | ' +
-                                      'dd status=none ' +
+                                      'count=' + str(container_size_needed_m) +
+                                      ' | pv -s ' +
+                                      str(container_size_needed_m * 10248576) +
+                                      ' | ' + 'dd status=none ' +
                                       'of=' + container, shell=True)
             except subprocess.CalledProcessError, e:
                 status_item('Generation Result')
@@ -128,7 +139,8 @@ class backup:
                               size(container_size) + ')')
 
             status_item('Capacity Estimated')
-            container_size_net = container_size - self.container_overhead
+            container_size_net = container_size - \
+                                 (self.container_overhead_m * 1048576)
             capacity_est = float(arc_block) / float(container_size_net) * 100
             if capacity_est > 100:
                  capacity_est = 100
