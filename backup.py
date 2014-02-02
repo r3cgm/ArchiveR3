@@ -81,7 +81,7 @@ class backup:
                                       'status=none ' +
                                       'count=' + str(container_size_needed_m) +
                                       ' | pv -s ' +
-                                      str(container_size_needed_m * 10248576) +
+                                      str(container_size_needed_m * 1048576) +
                                       ' | ' + 'dd status=none ' +
                                       'of=' + container, shell=True)
             except subprocess.CalledProcessError, e:
@@ -282,7 +282,8 @@ class backup:
                 return 1
 
             if not self.args.cleanup:
-                cleanup(self.archive_mount, self.container_file, self.lbdevice)
+                self.cleanup(self.archive_mount, self.container_file,
+                             self.lbdevice)
 
         return 0
 
