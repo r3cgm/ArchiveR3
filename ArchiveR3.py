@@ -221,7 +221,7 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
     try:
         p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                               '-i -d ' + lbdevice + "\n" +
-                              "set timeout 2\n" +
+                              "set timeout -1\n" +
                               "expect Passphrase\n" +
                               "send " + password_base +
                               container_file + '\\r' + "\n" +
@@ -259,7 +259,7 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
         p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                               '-c -d ' + lbdevice + ' ' +
                               '-a whirlpool -b AES-256-XTS' + "\n" +
-                              "set timeout 2\n" +
+                              "set timeout -1\n" +
                               "expect Passphrase\n" +
                               "send " + password_base +
                               container_file + '\\r' + "\n" +
@@ -588,7 +588,7 @@ def mapper_container(lbdevice, container_file, password_base, verbose=False):
         result = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                                   '-m ' + container_file + ' ' +
                                   '-d ' + lbdevice + "\n" +
-                                  "set timeout 1\n" +
+                                  "set timeout -1\n" +
                                   "expect Passphrase\n" +
                                   "send " + password_base +
                                   container_file + '\\r' + "\n" +
