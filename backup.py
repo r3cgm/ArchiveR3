@@ -98,24 +98,42 @@ class backup:
         else:
             return 1
 
+    def cleanup(self):
+        """ Unmount, unmap, and remove the loopback device associated with
+        the encrypted container. """
+        if self.archive_mount:
+            umount(self.archive_mount)
+        if self.container_file:
+            unmap(self.container_file)
+        if self.lbdevice:
+            loopback_delete(self.lbdevice)
+
     def backup(self):
         # TODO: make the definitions backing up these checks all consistent,
         # in terms of who is reponsible for printing status info, the caller
         # or the function, etc.
         for i, s in enumerate(self.config.archive_list):
 
+            # these 3 variables are key to performing safe cleanup.  they do
+            # not need to be populated now, but they need to be declared.
+            # at any point the user may Ctrl-C out, and we will use these
+            # variables to clean up.
+            self.archive_mount = ''
+            self.container_file = ''
+            self.lbdevice = ''
+
             archive_dir = self.config.archive_list[i]
             status_item('Archive')
             status_result(archive_dir)
 
             container_dir = self.config.backup_dir
-            container_file = self.config.archive_list[i].split('/')[-2] + \
-                '.archive'
-            container = container_dir + container_file
+            self.container_file = self.config.archive_list[i].split('/')[-2] \
+                + '.archive'
+            container = container_dir + self.container_file
 
             arc_block = dir_size(archive_dir, block_size=512)
 
-            status_item(container_file)
+            status_item(self.container_file)
             if os.path.isfile(container):
                 status_result('CONTAINER FOUND', 1)
             else:
@@ -138,7 +156,7 @@ class backup:
                 status_result(str(container_size) + ' (' +
                               size(container_size) + ')')
 
-            status_item('Capacity Estimated')
+            status_item('Estimated Container Capacity')
             container_size_net = container_size - \
                                  (self.container_overhead_m * 1048576)
             capacity_est = float(arc_block) / float(container_size_net) * 100
@@ -156,46 +174,49 @@ class backup:
                           + size(arc_block) + '/' + size(container_size_net))
 
             if capacity_est_condition == 2:
+                status_item('')
+                status_result('OUT OF SPACE', capacity_est_condition)
+
                 status_item('Reprovision? (y/n)')
-                confirm_reprovision = raw_input()
-                # TODO functionalize the next 3 lines
-                umount(archive_mount)
-                unmap(container_file)
-                loopback_delete(lbdevice)
-                if self.create_archive(self.config.archive_list[i],
-                                       container, self.config.backup_dir,
-                                       arc_block + self.container_overhead):
-                    return 1
+                if raw_input() == 'y':
+                    if self.create_archive(self.config.archive_list[i],
+                                           container, self.config.backup_dir,
+                                           arc_block + self.container_overhead):
+                        return 1
+                    else:
+                        status_item('Reprovision')
+                        status_result('SUCCESS', 1)
                 else:
-                    status_item('Reprovision')
-                    status_result('SUCCESS BUT NEED TO RESTART AND MAKE SURE' +
-                    'NOT RUNNING WITH --cleanup OPTION', 2)
+                    status_item('Capacity')
+                    status_result('EXCEEDED', 3)
                     return 1
 
-            lbdevice = loopback_exists(container)
+            self.lbdevice = loopback_exists(container)
 
-            if not lbdevice:
+            if not self.lbdevice:
                 loopback_cleanup(container)
-                lbdevice = loopback_next()
-                if not lbdevice:
+                self.lbdevice = loopback_next()
+                if not self.lbdevice:
                     return 1
-                if loopback_setup(lbdevice, container):
+                if loopback_setup(self.lbdevice, container):
                     return 1
 
-            if loopback_encrypted(lbdevice, self.config.password_base,
-                                  self.config.backup_dir, container_file,
+            if loopback_encrypted(self.lbdevice, self.config.password_base,
+                                  self.config.backup_dir, self.container_file,
                                   self.args.verbose):
                 status_item('!! (RE)ENCRYPT CONTAINER? (y/n)')
                 if raw_input() == 'y':
-                    if loopback_encrypt(lbdevice, self.config.password_base,
-                                        container_file, self.args.verbose):
+                    if loopback_encrypt(self.lbdevice,
+                                        self.config.password_base,
+                                        self.container_file,
+                                        self.args.verbose):
                         return 1
                 else:
                     return 1
 
-            archive_map = '/dev/mapper/' + container_file
+            archive_map = '/dev/mapper/' + self.container_file
 
-            if mapper_check(lbdevice, archive_map, container_file,
+            if mapper_check(self.lbdevice, archive_map, self.container_file,
                             self.config.password_base, self.args.verbose):
                 return 1
 
@@ -207,12 +228,12 @@ class backup:
                 else:
                     return 1
 
-            archive_mount = self.config.mount_dir + container_file
+            self.archive_mount = self.config.mount_dir + self.container_file
 
-            if mount_check(archive_map, archive_mount):
+            if mount_check(archive_map, self.archive_mount):
                 return 1
 
-            stat = os.statvfs(archive_mount)
+            stat = os.statvfs(self.archive_mount)
             cryptfs_size = str(stat.f_blocks * stat.f_frsize)
             if not cryptfs_size:
                 status_item('Encrypted Filesystem Size')
@@ -224,6 +245,7 @@ class backup:
             if capacity_act > 100:
                 capacity_act = 100
 
+            # capacity_act_condition will be 1 (green/OK) or 2 (yellow/WARNING)
             if capacity_act < self.config.provision_capacity_reprovision:
                 capacity_act_condition = 1
             else:
@@ -237,10 +259,8 @@ class backup:
             if capacity_act_condition == 2:
                 status_item('Reprovision? (y/n)')
                 confirm_reprovision = raw_input()
-                # TODO functionalize the next 3 lines
-                umount(archive_mount)
-                unmap(container_file)
-                loopback_delete(lbdevice)
+                self.cleanup(self.archive_mount, self.container_file,
+                             self.lbdevice)
                 if self.create_archive(self.config.archive_list[i],
                                        container, self.config.backup_dir,
                                        arc_block + self.container_overhead):
@@ -256,56 +276,60 @@ class backup:
 #           status_result('total ' + str(stat.f_blocks * stat.f_frsize))
 #           status_result('avail ' + str((stat.f_blocks - stat.f_bfree) * \
 #                         stat.f_frsize))
-#           status_result(str(get_fs_freespace(archive_mount)))
+#           status_result(str(get_fs_freespace(self.archive_mount)))
 
-            if sync(archive_dir, archive_mount):
+            if sync(archive_dir, self.archive_mount):
                 return 1
 
             if not self.args.cleanup:
-                umount(archive_mount)
-                unmap(container_file)
-                loopback_delete(lbdevice)
+                cleanup(self.archive_mount, self.container_file, self.lbdevice)
 
         return 0
 
     def main(self):
         """ If you call the python as a script, this is what gets executed. """
-        self.args_process()
-        time_init = print_header('backup')
-        status_item('Config \'' + self.args.config + '\'')
-
-        self.config = config_read(self.args.config)
-        if self.config:
-            status_result('LOADED', 1)
-            if config_validate(self.config):
-                status_item('Configuration')
-                status_result('VALIDATION FAILED', 3)
+        try:
+            self.args_process()
+            time_init = print_header('backup')
+            status_item('Config \'' + self.args.config + '\'')
+ 
+            self.config = config_read(self.args.config)
+            if self.config:
+                status_result('LOADED', 1)
+                if config_validate(self.config):
+                    status_item('Configuration')
+                    status_result('VALIDATION FAILED', 3)
+                else:
+                    status_item('Configuration')
+                    status_result('VALIDATED', 1)
+                    section_break()
+                    rc = self.backup()
+                    status_item('Backup')
+                    if rc == 1:
+                        status_result('FAILED', 3)
+                    else:
+                        status_result('SUCCESS', 1)
             else:
-                status_item('Configuration')
-                status_result('VALIDATED', 1)
-                section_break()
-                rc = self.backup()
-                status_item('Backup')
-                if rc == 1:
-                    status_result('FAILED', 3)
+                status_result('NOT FOUND', 3)
+ 
+            print_footer('backup', time_init)
+        except KeyboardInterrupt:
+            print
+            status_item('Backup')
+            status_result('ABORT', 3)
+            if not self.args.cleanup:
+                status_item('Cleanup')
+                if self.cleanup():
+                    status_result('FAILURE', 3)
                 else:
                     status_result('SUCCESS', 1)
-        else:
-            status_result('NOT FOUND', 3)
-
-        print_footer('backup', time_init)
+            status_item('Safe Quit')
+            status_result('SUCCESS', 1)
+            pass
 
 
 if __name__ == '__main__':
     sys.stdout = Unbuffered(sys.stdout)
 
-    try:
-        backup = backup()
-        backup.main()
-    except KeyboardInterrupt:
-        print
-        status_item('Backup')
-        status_result('ABORT', 3)
-        status_item('Safe Quit')
-        status_result('SUCCESS', 1)
-        pass
+    backup = backup()
+    backup.main()

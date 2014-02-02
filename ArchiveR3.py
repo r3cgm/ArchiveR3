@@ -571,6 +571,9 @@ def umount(mount_point):
 
 def unmap(container_file):
     """ Unmap a dm-crypt volume. """
+    if not os.path.islink('/dev/mapper/' + container_file):
+        return 0
+
     status_item('/dev/mapper/' + container_file)
     try:
         subprocess.check_call(['sudo', 'dmsetup', 'remove', container_file])
