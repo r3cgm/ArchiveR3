@@ -259,8 +259,7 @@ class backup:
             if capacity_act_condition == 2:
                 status_item('Reprovision? (y/n)')
                 confirm_reprovision = raw_input()
-                self.cleanup(self.archive_mount, self.container_file,
-                             self.lbdevice)
+                self.cleanup()
                 if self.create_archive(self.config.archive_list[i],
                                        container, self.config.backup_dir,
                                        arc_block + self.container_overhead):
@@ -282,8 +281,7 @@ class backup:
                 return 1
 
             if not self.args.cleanup:
-                self.cleanup(self.archive_mount, self.container_file,
-                             self.lbdevice)
+                self.cleanup()
 
         return 0
 
