@@ -206,11 +206,12 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
     file = open(backup_dir + container_file, 'rb')
     count = 0
     integer = struct.unpack('i', file.read(4))[0]
-    while integer and count < 10000000:
+    while integer and count < 100000:
         sum += integer
         integer_file = file.read(4)
         integer_file = '\0' * (4 - len(integer_file)) + integer_file
         integer = struct.unpack('i', integer_file)[0]
+        count += 1
     file.close()
     if sum:
         status_result('BINARY,', 1, no_newline=True)
@@ -716,11 +717,16 @@ def sync(source, target):
                               '--max-delete=100 ' +
                               '--human-readable ' +
                               '--itemize-changes ' +
-                              source.rstrip('/') + ' ' + target,
-                              shell=True)
+                              source.rstrip('/') + ' ' + target, shell=True)
+#                             stdout=subprocess.PIPE, shell=True)
 
 # TODO
 #                             '--log-file=$LOGFILE.$i.rsync ' +
+#       print
+#       print
+#       for line in iter(pi.stdout.readline, ''):
+#           print(">>> " + line.rstrip())
+#       print
     except subprocess.CalledProcessError, e:
         status_result('ERROR', 3)
         return 1
