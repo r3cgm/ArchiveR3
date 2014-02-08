@@ -114,6 +114,8 @@ class backup:
         # or the function, etc.
         for i, s in enumerate(self.config.archive_list):
 
+            section_break()
+
             # these 3 variables are key to performing safe cleanup.  they do
             # not need to be populated now, but they need to be declared.
             # at any point the user may Ctrl-C out, and we will use these
@@ -301,7 +303,6 @@ class backup:
                 else:
                     status_item('Configuration')
                     status_result('VALIDATED', 1)
-                    section_break()
                     rc = self.backup()
                     status_item('Backup')
                     if rc == 1:
