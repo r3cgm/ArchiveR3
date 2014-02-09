@@ -28,9 +28,14 @@ def dir_size(dir, block_size=0):
     hard links.  Optionally specify a blocksize so that file sizes will be
     padded and more accurately represent actual consumed size on disk. """
     total_size = 0
+    file_count = 0
     seen = {}
+    status_item('Sizing ' + dir)
     for dirpath, dirnames, filenames in os.walk(dir):
         for f in filenames:
+            file_count += 1
+            if file_count % 1000 == 0:
+                status_result('.', no_newline=True)
             fp = os.path.join(dirpath, f)
             try:
                 stat = os.stat(fp)
@@ -49,6 +54,7 @@ def dir_size(dir, block_size=0):
             else:
                 total_size += stat.st_size
 
+    status_result('DONE')
     return total_size
 
 
