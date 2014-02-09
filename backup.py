@@ -116,14 +116,6 @@ class backup:
 
             section_break()
 
-            # these 3 variables are key to performing safe cleanup.  they do
-            # not need to be populated now, but they need to be declared.
-            # at any point the user may Ctrl-C out, and we will use these
-            # variables to clean up.
-            self.archive_mount = ''
-            self.container_file = ''
-            self.lbdevice = ''
-
             archive_dir = self.config.archive_list[i]
             status_item('Archive')
             status_result(archive_dir)
@@ -289,9 +281,18 @@ class backup:
 
     def main(self):
         """ If you call the python as a script, this is what gets executed. """
+
+        # These 3 variables are key to performing safe cleanup.  they do not
+        # need to be populated now, but they need to be declared.  At any point
+        # the user may Ctrl-C out, and we will use these variables to clean up.
+        self.archive_mount = ''
+        self.container_file = ''
+        self.lbdevice = ''
+
         try:
             self.args_process()
             time_init = print_header('backup')
+
             status_item('Config \'' + self.args.config + '\'')
  
             self.config = config_read(self.args.config)
