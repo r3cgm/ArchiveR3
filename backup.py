@@ -59,11 +59,11 @@ class backup:
         """ Given a container size, calculate the expected overhead due
         to encryption, reserved space for root, journaling, etc. """
         container_overhead = self.container_overhead_fixed \
-                             + ( \
-                                 (container_size \
-                                  - self.container_overhead_fixed) \
-                                 *
-                                 (self.container_overhead_percent / 100))
+            + (
+                (container_size
+                    - self.container_overhead_fixed)
+                *
+                (self.container_overhead_percent / 100))
         container_overhead = int(math.ceil(container_overhead))
         return container_overhead
 
@@ -73,8 +73,8 @@ class backup:
         expected overhead due to encrypt, reserved space for root, journaling,
         etc. """
         archive_container = archive_size \
-                           * ((self.container_overhead_percent + 100) / 100) \
-                           + self.container_overhead_fixed
+            * ((self.container_overhead_percent + 100) / 100) \
+            + self.container_overhead_fixed
         archive_container = int(math.ceil(archive_container))
         return archive_container
 
@@ -94,9 +94,9 @@ class backup:
             status_item('Required Container Size')
             # Round to the nearest megabyte to speed up dd blocksize below.
             container_size_needed_m = \
-                int(math.ceil(self.calc_archive_container(archive_size) \
+                int(math.ceil(self.calc_archive_container(archive_size)
                     / 1048576))
-            
+
             status_result(str(container_size_needed_m * 1048576) + ' (' +
                           str(container_size_needed_m) + 'M)')
             status_item('Generating Container')
@@ -178,7 +178,7 @@ class backup:
 
             status_item('Estimated Consumption')
             container_size_net = container_size - \
-                                 self.calc_container_overhead(container_size)
+                self.calc_container_overhead(container_size)
 
             capacity_est = float(arc_block) / float(container_size_net) * 100
 
@@ -251,7 +251,7 @@ class backup:
 
             stat = os.statvfs(self.archive_mount)
 
-            cryptfs_size = str((stat.f_blocks - \
+            cryptfs_size = str((stat.f_blocks -
                                (stat.f_bfree - stat.f_bavail)) * stat.f_frsize)
 
             if not cryptfs_size:

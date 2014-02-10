@@ -125,6 +125,7 @@ def dir_validate(dir, create=0, write=0, read=0, sudo=0):
 
     if read:
         read_proved = False
+
         def dir_error(error):
             print 'error ' + str(error)
             return 1
