@@ -1,7 +1,10 @@
 [ArchiveR3]
 backup_dir: /mnt/cloud/ArchiveR3/
 mount_dir: /mnt
-archives: /mnt/nas/USERNAME/DIR1 /home/USERNAME /tmp/SOMEDIR
+archives:
+    /mnt/nas/USERNAME/DIR1
+    /home/USERNAME
+    /tmp/SOMEDIR
 data_dir: /tmp/ArchiveR3/data/
 log_dir: /tmp/ArchiveR3/logs/
 password_base: password
