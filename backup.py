@@ -128,6 +128,8 @@ class backup:
     def cleanup(self):
         """ Unmount, unmap, and remove the loopback device associated with
         the encrypted container. """
+        # Give the rsync time to gracefully terminate.
+        time.sleep(3)
         if self.archive_mount:
             umount(self.archive_mount)
         if self.container_file:
@@ -152,6 +154,10 @@ class backup:
             self.lbdevice = loopback_exists(container)
 
             arc_block = dir_size(archive_dir, block_size=512)
+            if arc_block == -1:
+                status_item('ARCHIVE READABILITY')
+                status_result('FAILED', 3)
+                return 1
 
             status_item(self.container_file)
             if os.path.isfile(container):
@@ -338,7 +344,7 @@ class backup:
         except KeyboardInterrupt:
             print
             status_item('Backup')
-            status_result('ABORT', 3)
+            status_result('ABORTING...', 3)
             if not self.args.cleanup:
                 status_item('Cleanup')
                 if self.cleanup():

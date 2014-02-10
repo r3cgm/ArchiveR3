@@ -28,7 +28,8 @@ def dir_size(dir, block_size=0):
     hard links.  Optionally specify a blocksize so that file sizes will be
     padded and more accurately represent actual consumed size on disk.
     If blocksize is specified directories will be tabulated as well, assuming
-    they consume 1 block. """
+    they consume 1 block.  Return -1 if any files or directories are not
+    readable. """
     total_size = 0
     file_count = 0
     dir_count = 0
@@ -44,6 +45,9 @@ def dir_size(dir, block_size=0):
                 stat = os.stat(fp)
             except OSError:
                 continue
+            if not os.access(dirpath, os.R_OK):
+                status_result('PERMISSION DENIED ' + dirpath, 3)
+                return -1
 
             try:
                 seen[stat.st_ino]
@@ -56,8 +60,12 @@ def dir_size(dir, block_size=0):
                     block_size
             else:
                 total_size += stat.st_size
-        if block_size:
-            for d in dirnames:
+
+        for d in dirnames:
+            if not os.access(d, os.R_OK):
+                status_result('PERMISSION DENIED /' + d, 3)
+                return -1
+            if block_size:
                 dir_count += 1
                 total_size += block_size
 
@@ -201,7 +209,7 @@ def loopback_setup(lbdevice, file):
     result = subprocess.Popen(['sudo', 'losetup', '--verbose', lbdevice, file],
                               stdout=subprocess.PIPE).communicate()[0]
     if re.match('.*Loop device is ' + str(lbdevice) + '.*', result):
-        status_result('LOOPBACK ALLOCATED', 4)
+        status_result('LOOPBACKED', 4)
         return 0
     else:
         status_result('FAILED', 3)
@@ -220,7 +228,7 @@ def loopback_delete(lbdevice):
     except Exception, e:
         status_result('LOOPBACK DEALLOCATION NOT FOUND')
         return 1
-    status_result('LOOPBACK DEALLOCATED', 4)
+    status_result('UNLOOPBACKED', 4)
 
 
 def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
