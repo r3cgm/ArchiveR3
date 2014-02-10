@@ -116,17 +116,23 @@ def dir_validate(dir, create=0, write=0, read=0, sudo=0):
             return 1
 
     if read:
+        def dir_error(error):
+            print 'error ' + str(error)
+            return 1
+
         for root, dirs, files in os.walk(dir):
-            for filename in files:
-                file = open(root + '/' + filename, 'r')
-                test_byte = file.read(1)
-                if test_byte:
-                    status_result('READABLE', 1, no_newline=True)
-                else:
-                    status_result('NOT READABLE', 3)
-                    return 1
+            if files:
+                for filename in files:
+                    print 'filename ' + filename
+                    file = open(root + '/' + filename, 'r')
+                    test_byte = file.read(1)
+                    if test_byte:
+                        status_result('READABLE', 1, no_newline=True)
+                    else:
+                        status_result('NOT READABLE', 3)
+                        return 1
+                    break
                 break
-            break
 
     if not read and not write:
         status_result('FOUND', 1)

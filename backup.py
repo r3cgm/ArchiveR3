@@ -310,6 +310,8 @@ class backup:
                     else:
                         status_result('SUCCESS', 1)
 
+            status_item('Backup')
+            status_result('FAILED', 3)
             print_footer('backup', time_init)
         except KeyboardInterrupt:
             print
