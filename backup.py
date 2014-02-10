@@ -23,9 +23,11 @@ class backup:
 
     def init_vars(self):
         """ Initialize class variables. """
-        # lost storage due to overhead of encrypted container
-        self.container_overhead = 1471488
-        self.container_overhead_m = 2
+        # Lost storage due to overhead of encrypted container.
+        # ~6.4M fixed overhead.
+        # Plus 7.5% relative overhead.
+        self.container_overhead_fixed = 6225865
+        self.container_overhead_percent = 7.5
 
     def args_process(self):
         """ Process command-line arguments. """
@@ -53,6 +55,29 @@ class backup:
             sys.exit(1)
         self.args = parser.parse_args()
 
+    def calc_container_overhead(self, container_size):
+        """ Given a container size, calculate the expected overhead due
+        to encryption, reserved space for root, journaling, etc. """
+        container_overhead = self.container_overhead_fixed \
+                             + ( \
+                                 (container_size \
+                                  - self.container_overhead_fixed) \
+                                 *
+                                 (self.container_overhead_percent / 100))
+        container_overhead = int(math.ceil(container_overhead))
+        return container_overhead
+
+    def calc_archive_container(self, archive_size):
+        """ Given an archive size, calculate the approximate minimum size of
+        the container necessary to hold the archive.  This takes into account
+        expected overhead due to encrypt, reserved space for root, journaling,
+        etc. """
+        archive_container = archive_size \
+                           * ((self.container_overhead_percent + 100) / 100) \
+                           + self.container_overhead_fixed
+        archive_container = int(math.ceil(archive_container))
+        return archive_container
+
     def create_archive(self, archive_dir, container, backup_dir, arc_block):
         """ Create an encrypted container.  The resulting containersize is only
         accurate to the nearest megabyte.  Return 1 if any problems or 0 for
@@ -62,15 +87,16 @@ class backup:
             archive_size = int(float(arc_block) /
                                float(self.config.provision_capacity_percent)
                                * 100)
-            archive_size_m = int(math.ceil(float(archive_size) / 1024 / 1024))
-            status_item('Archive Size')
+            status_item('Archive Block Size')
             status_result(str(arc_block) + ' (' + size(arc_block) + ')')
-            status_item('Provisioned Archive Size')
+            status_item('Provision Capacity')
             status_result(str(archive_size) + ' (' + size(archive_size) + ')')
             status_item('Required Container Size')
-            container_size_needed = archive_size + self.container_overhead
-            container_size_needed_m = archive_size_m + \
-                self.container_overhead_m
+            # Round to the nearest megabyte to speed up dd blocksize below.
+            container_size_needed_m = \
+                int(math.ceil(self.calc_archive_container(archive_size) \
+                    / 1048576))
+            
             status_result(str(container_size_needed_m * 1048576) + ' (' +
                           str(container_size_needed_m) + 'M)')
             status_item('Generating Container')
@@ -84,6 +110,7 @@ class backup:
                                       str(container_size_needed_m * 1048576) +
                                       ' | ' + 'dd status=none ' +
                                       'of=' + container, shell=True)
+                print
             except subprocess.CalledProcessError, e:
                 status_item('Generation Result')
                 status_result('FAILED: ' + str(e), 3)
@@ -109,21 +136,20 @@ class backup:
             loopback_delete(self.lbdevice)
 
     def backup(self):
-        # TODO: make the definitions backing up these checks all consistent,
-        # in terms of who is reponsible for printing status info, the caller
-        # or the function, etc.
         for i, s in enumerate(self.config.archive_list):
-
             section_break()
 
             archive_dir = self.config.archive_list[i]
             status_item('Archive')
             status_result(archive_dir)
 
-            container_dir = self.config.backup_dir
             self.container_file = self.config.archive_list[i].split('/')[-2] \
                 + '.archive'
-            container = container_dir + self.container_file
+
+            self.archive_mount = self.config.mount_dir + self.container_file
+            container = self.config.backup_dir + self.container_file
+
+            self.lbdevice = loopback_exists(container)
 
             arc_block = dir_size(archive_dir, block_size=512)
 
@@ -150,12 +176,11 @@ class backup:
                 status_result(str(container_size) + ' (' +
                               size(container_size) + ')')
 
-            status_item('Estimated Container Capacity')
+            status_item('Estimated Consumption')
             container_size_net = container_size - \
-                (self.container_overhead_m * 1048576)
+                                 self.calc_container_overhead(container_size)
+
             capacity_est = float(arc_block) / float(container_size_net) * 100
-            if capacity_est > 100:
-                capacity_est = 100
 
             if capacity_est < self.config.provision_capacity_reprovision:
                 capacity_est_condition = 1
@@ -173,20 +198,18 @@ class backup:
 
                 status_item('Reprovision? (y/n)')
                 if raw_input() == 'y':
+                    self.cleanup()
                     if self.create_archive(self.config.archive_list[i],
                                            container, self.config.backup_dir,
-                                           arc_block +
-                                           self.container_overhead):
+                                           arc_block):
                         return 1
                     else:
-                        status_item('Reprovision')
+                        status_item('Container Generation')
                         status_result('SUCCESS', 1)
                 else:
                     status_item('Capacity')
                     status_result('EXCEEDED', 3)
                     return 1
-
-            self.lbdevice = loopback_exists(container)
 
             if not self.lbdevice:
                 loopback_cleanup(container)
@@ -223,22 +246,22 @@ class backup:
                 else:
                     return 1
 
-            self.archive_mount = self.config.mount_dir + self.container_file
-
             if mount_check(archive_map, self.archive_mount):
                 return 1
 
             stat = os.statvfs(self.archive_mount)
-            cryptfs_size = str(stat.f_blocks * stat.f_frsize)
+
+            cryptfs_size = str((stat.f_blocks - \
+                               (stat.f_bfree - stat.f_bavail)) * stat.f_frsize)
+
             if not cryptfs_size:
                 status_item('Encrypted Filesystem Size')
                 status_result('PROBE FAILED', 3)
                 return 1
 
-            status_item('Capacity Actual')
+            status_item('Actual Consumption')
+
             capacity_act = float(arc_block) / float(cryptfs_size) * 100
-            if capacity_act > 100:
-                capacity_act = 100
 
             # capacity_act_condition will be 1 (green/OK) or 2 (yellow/WARNING)
             if capacity_act < self.config.provision_capacity_reprovision:
@@ -265,18 +288,17 @@ class backup:
                                   'NOT RUNNING WITH --cleanup OPTION', 2)
                     return 1
 
-# TODO: cleanup
-#           status_result('free ' + str(stat.f_bavail * stat.f_frsize))
-#           status_result('total ' + str(stat.f_blocks * stat.f_frsize))
-#           status_result('avail ' + str((stat.f_blocks - stat.f_bfree) * \
-#                         stat.f_frsize))
-#           status_result(str(get_fs_freespace(self.archive_mount)))
-
             if sync(archive_dir, self.archive_mount):
                 return 1
 
             if not self.args.cleanup:
                 self.cleanup()
+
+            # Clean up global variables so there is no chance of accidentally
+            # using them next time through the loop.
+            self.container_file = ''
+            self.archive_mount = ''
+            self.lbdevice = ''
 
         return 0
 
@@ -286,9 +308,9 @@ class backup:
         # These 3 variables are key to performing safe cleanup.  they do not
         # need to be populated now, but they need to be declared.  At any point
         # the user may Ctrl-C out, and we will use these variables to clean up.
-        self.archive_mount = ''
         self.container_file = ''
         self.lbdevice = ''
+        self.archive_mount = ''
 
         try:
             self.args_process()
@@ -300,6 +322,8 @@ class backup:
                 if config_validate(self.config):
                     status_item('Configuration')
                     status_result('VALIDATION FAILED', 3)
+                    status_item('Backup')
+                    status_result('FAILED', 3)
                 else:
                     status_item('Configuration')
                     status_result('VALIDATED', 1)
@@ -310,8 +334,6 @@ class backup:
                     else:
                         status_result('SUCCESS', 1)
 
-            status_item('Backup')
-            status_result('FAILED', 3)
             print_footer('backup', time_init)
         except KeyboardInterrupt:
             print

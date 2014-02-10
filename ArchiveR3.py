@@ -26,9 +26,12 @@ def dir_size(dir, block_size=0):
     """ Calculate the size of a directory by recursively adding up the size of
     all files within, recursively.  This does not double-count any symlinks or
     hard links.  Optionally specify a blocksize so that file sizes will be
-    padded and more accurately represent actual consumed size on disk. """
+    padded and more accurately represent actual consumed size on disk.
+    If blocksize is specified directories will be tabulated as well, assuming
+    they consume 1 block. """
     total_size = 0
     file_count = 0
+    dir_count = 0
     seen = {}
     status_item('Sizing ' + dir)
     for dirpath, dirnames, filenames in os.walk(dir):
@@ -53,8 +56,13 @@ def dir_size(dir, block_size=0):
                     block_size
             else:
                 total_size += stat.st_size
+        if block_size:
+            for d in dirnames:
+                dir_count += 1
+                total_size += block_size
 
-    status_result('DONE')
+    status_result('DONE', 1, no_newline=True)
+    status_result('files ' + str(file_count) + ' dirs ' + str(dir_count))
     return total_size
 
 
@@ -218,7 +226,7 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
                        verbose=False):
     """ Perform tests to determine if the loopback device is a valid
     encrypted container. """
-    status_item('Container Check')
+    status_item('Container Integrity')
     sum = 0
     file = open(backup_dir + container_file, 'rb')
     count = 0
@@ -589,15 +597,22 @@ def mount_check(archive_map, archive_mount):
 
 def umount(mount_point):
     """ Perform an umount operation to release a filesystem, typically during
-    cleanup.  Operation is performed via sudo. """
-    status_item(mount_point)
+    cleanup.  Operation is performed via sudo.  Return 1 if problems. """
+    devnull = open('/dev/null', 'w')
     try:
-        subprocess.check_call(['sudo', 'umount', mount_point])
+        subprocess.check_call(['sudo', 'umount', mount_point], stderr=devnull)
     except subprocess.CalledProcessError, e:
+        if re.match('.* returned non-zero exit status 1', str(e)):
+            # Not mounted.
+            return
+        status_item(mount_point)
         status_result('ERROR UNMOUNTING', 3)
         return 1
     except Exception, e:
+        status_item(mount_point)
         status_result('UNMOUNT COMMAND MISSING', 3)
+        return 1
+    status_item(mount_point)
     status_result('UNMOUNTED', 4)
 
 
