@@ -152,10 +152,10 @@ class backup:
 
             status_item('Estimated Container Capacity')
             container_size_net = container_size - \
-                                 (self.container_overhead_m * 1048576)
+                (self.container_overhead_m * 1048576)
             capacity_est = float(arc_block) / float(container_size_net) * 100
             if capacity_est > 100:
-                 capacity_est = 100
+                capacity_est = 100
 
             if capacity_est < self.config.provision_capacity_reprovision:
                 capacity_est_condition = 1
@@ -175,7 +175,8 @@ class backup:
                 if raw_input() == 'y':
                     if self.create_archive(self.config.archive_list[i],
                                            container, self.config.backup_dir,
-                                           arc_block + self.container_overhead):
+                                           arc_block +
+                                           self.container_overhead):
                         return 1
                     else:
                         status_item('Reprovision')
@@ -261,7 +262,7 @@ class backup:
                 else:
                     status_item('Reprovision')
                     status_result('SUCCESS BUT NEED TO RESTART AND MAKE SURE' +
-                    'NOT RUNNING WITH --cleanup OPTION', 2)
+                                  'NOT RUNNING WITH --cleanup OPTION', 2)
                     return 1
 
 # TODO: cleanup
@@ -293,11 +294,9 @@ class backup:
             self.args_process()
             time_init = print_header('backup')
 
-            status_item('Config \'' + self.args.config + '\'')
- 
             self.config = config_read(self.args.config)
+
             if self.config:
-                status_result('LOADED', 1)
                 if config_validate(self.config):
                     status_item('Configuration')
                     status_result('VALIDATION FAILED', 3)
@@ -310,9 +309,7 @@ class backup:
                         status_result('FAILED', 3)
                     else:
                         status_result('SUCCESS', 1)
-            else:
-                status_result('NOT FOUND', 3)
- 
+
             print_footer('backup', time_init)
         except KeyboardInterrupt:
             print

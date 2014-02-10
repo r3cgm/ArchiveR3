@@ -309,12 +309,25 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
 
 
 def config_read(config_file):
-    """ Read the configuration. """
+    """ Read the configuration.  Return a ConfigParser object on success or
+    nothing on failure. """
+    status_item('Config \'' + config_file + '\'')
+
     if not os.path.isfile(config_file):
+        status_result('NOT FOUND', 3)
         return
 
     config = ConfigParser.RawConfigParser()
-    config.read(config_file)
+
+    try:
+        config.read(config_file)
+    except ConfigParser.ParsingError, e:
+        status_result('PARSE ERROR', 3)
+        print
+        print str(e)
+        print
+        return
+
     config.backup_dir = normalize_dir(config.get('ArchiveR3', 'backup_dir'))
     config.mount_dir = normalize_dir(config.get('ArchiveR3', 'mount_dir'))
     config.archives = normalize_dir(config.get('ArchiveR3', 'archives'))
@@ -326,6 +339,7 @@ def config_read(config_file):
         config.getint('ArchiveR3', 'provision_capacity_percent')
     config.provision_capacity_reprovision = \
         config.getint('ArchiveR3', 'provision_capacity_reprovision')
+    status_result('LOADED', 1)
     return config
 
 
