@@ -764,22 +764,20 @@ def sync(source, target):
                               '--max-delete=100 ' +
                               '--human-readable ' +
                               '--itemize-changes ' +
-                              source.rstrip('/') + ' ' + target, shell=True)
-#                             stdout=subprocess.PIPE, shell=True)
-
-# TODO
-#                             '--log-file=$LOGFILE.$i.rsync ' +
-#       print
-#       print
-#       for line in iter(pi.stdout.readline, ''):
-#           print(">>> " + line.rstrip())
-#       print
+                              source.rstrip('/') + ' ' + target, shell=True,
+                              stdout=subprocess.PIPE)
+        print
+        print
+        for line in iter(p1.stdout.readline, ''):
+            print(">>> " + line.rstrip())
+        print
     except subprocess.CalledProcessError, e:
         status_result('ERROR', 3)
         return 1
     except Exception, e:
         status_result('NOT FOUND', 3)
         return 1
+    status_item('')
     status_result('SUCCESS', 1)
 
 
