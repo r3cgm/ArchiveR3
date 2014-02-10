@@ -37,6 +37,9 @@ def dir_size(dir, block_size=0):
     status_item('Sizing ' + dir)
     for dirpath, dirnames, filenames in os.walk(dir):
         for f in filenames:
+#           if f == '.CFUserTextEncoding':
+#               print 'ding ding ding we found .CFUserTextEncoding'
+
             file_count += 1
             if file_count % 1000 == 0:
                 status_result('.', no_newline=True)
@@ -45,8 +48,29 @@ def dir_size(dir, block_size=0):
                 stat = os.stat(fp)
             except OSError:
                 continue
-            if not os.access(dirpath, os.R_OK):
-                status_result('PERMISSION DENIED ' + dirpath, 3)
+
+            # os.access() is unreliable.  There is at least one edge case where
+            # a remote mounted CIFS share which appears to have readable
+            # permissions (by looking at 'ls' output) actually fails to open
+            # due to remote-side ownership issues:
+            #
+            # IOError: [Errno 13] Permission denied:
+            # '/mnt/remotedir/somefile'
+            #
+            # Unfortunately, the only recourse here is to perform direct open
+            # attempts on every single file.
+
+#           if not os.access(fp, os.R_OK):
+#               status_result('PERMISSION DENIED ' + fp, 3)
+#               return -1
+            try:
+                fh = open(fp, "r")
+                fh.close()
+            except IOError as e:
+                status_result('PERMISSION DENIED ' + fp, 3)
+                return -1
+            except:
+                status_result('UNEXPECTED ERROR' + sys.exc_info()[0], 3)
                 return -1
 
             try:
@@ -62,8 +86,14 @@ def dir_size(dir, block_size=0):
                 total_size += stat.st_size
 
         for d in dirnames:
-            if not os.access(d, os.R_OK):
-                status_result('PERMISSION DENIED /' + d, 3)
+            dp = os.path.join(dirpath, d)
+            # TODO: change a CIFS remote dir to some bogus ownership, rendering
+            # some particular directory technically unreadable but looking like
+            # it should be based on 'ls' output, then verify the os.access()
+            # function fails on it.  If necessary rewrite this routine like
+            # the one above for handling unreadable files.
+            if not os.access(dp, os.R_OK):
+                status_result('PERMISSION DENIED /' + dp, 3)
                 return -1
             if block_size:
                 dir_count += 1
