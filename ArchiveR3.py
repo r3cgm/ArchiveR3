@@ -342,13 +342,15 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
         # to encrypt properly.
 #       if verbose:
         while not p1.poll():
-            p1.send_signal(signal.SIGUSR1)
+            time.sleep(0.5)
+            print 'SIGNAL'
+            subprocess.Popen('sudo killall tcplay --signal SIGUSR1', shell=True)
+#           p1.send_signal(signal.SIGUSR1)
             print
             print
             for line in iter(p1.stdout.readline, ''):
                 print(">>> " + line.rstrip())
             print
-            time.sleep(0.5)
 
 # TODO
 #       if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
@@ -475,7 +477,7 @@ def config_validate(config):
             status_result('*e2fsck ERROR', 3)
             return 1
     except Exception, e:
-        status_result('*e2fsck MISSING', 3)
+        status_result('*e2fsck MISSING', 3, no_newline=True)
         return 1
 
     try:
@@ -489,6 +491,18 @@ def config_validate(config):
     status_result('expect', 1, no_newline=True)
 
     try:
+        subprocess.check_call(['sudo', 'killall', '--version'], stderr=devnull)
+    except subprocess.CalledProcessError, e:
+        status_result('*killall ERROR', 3)
+        return 1
+    except Exception, e:
+        status_result('*killall MISSING', 3)
+        return 1
+    status_result('*killall', 1)
+
+    status_item('')
+
+    try:
         subprocess.check_call(['sudo', 'losetup', '-h'], stdout=devnull)
     except subprocess.CalledProcessError, e:
         status_result('*losetup ERROR', 3)
@@ -496,9 +510,7 @@ def config_validate(config):
     except Exception, e:
         status_result('*losetup MISSING', 3)
         return 1
-    status_result('*losetup', 1)
-
-    status_item('')
+    status_result('*losetup', 1, no_newline=True)
 
     try:
         subprocess.check_call(['sudo', 'mkdir', '--help'], stdout=devnull)
@@ -528,7 +540,9 @@ def config_validate(config):
     except Exception, e:
         status_result('*mount MISSING', 3)
         return 1
-    status_result('*mount', 1, no_newline=True)
+    status_result('*mount', 1)
+
+    status_item('')
 
     try:
         subprocess.check_call(['sudo', 'mountpoint', '/'], stdout=devnull)
@@ -548,9 +562,7 @@ def config_validate(config):
     except Exception, e:
         status_result('pv MISSING', 3)
         return 1
-    status_result('pv', 1)
-
-    status_item('')
+    status_result('pv', 1, no_newline=True)
 
     try:
         subprocess.check_call(['sudo', 'rsync', '--version'], stdout=devnull)
