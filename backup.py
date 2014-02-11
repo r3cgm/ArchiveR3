@@ -340,6 +340,9 @@ class backup:
                     else:
                         status_result('SUCCESS', 1)
 
+                    if not self.args.cleanup:
+                        self.cleanup()
+
             print_footer('backup', time_init)
         except KeyboardInterrupt:
             print

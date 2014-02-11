@@ -3,6 +3,7 @@
 import ConfigParser
 import os
 import re
+import signal
 import struct
 import subprocess
 import sys
@@ -340,11 +341,14 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
         # TODO: for some reason this *must* be printed out or else we fail
         # to encrypt properly.
 #       if verbose:
-        print
-        print
-        for line in iter(p1.stdout.readline, ''):
-            print(">>> " + line.rstrip())
-        print
+        while not p1.poll():
+            p1.send_signal(signal.SIGUSR1)
+            print
+            print
+            for line in iter(p1.stdout.readline, ''):
+                print(">>> " + line.rstrip())
+            print
+            time.sleep(0.5)
 
 # TODO
 #       if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
