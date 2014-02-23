@@ -3,11 +3,21 @@
 import ConfigParser
 import os
 import re
-import signal
+import shlex, subprocess
 import struct
 import subprocess
 import sys
+# import threading
 import time
+from threading import Thread
+
+# https://stackoverflow.com/questions/375427/non-blocking-read-on-a-subprocess-pipe-in-python
+try:
+    from Queue import Queue, Empty
+except ImportError:
+    from queue import Queue, Empty  # python 3.x
+
+ON_POSIX = 'posix' in sys.builtin_module_names
 
 
 class Unbuffered:
@@ -21,6 +31,16 @@ class Unbuffered:
 
     def __getattr__(self, attr):
         return getattr(self.stream, attr)
+
+
+# def enqueue_output(process, queue):
+def enqueue_output(out, queue):
+#   if not process.poll():
+#       sys.exit('exiting now!')
+#   out = process.stdout
+    for line in iter(out.readline, b''):
+        queue.put(line)
+#   out.close()
 
 
 def dir_size(dir, block_size=0):
@@ -197,8 +217,13 @@ def loopback_exists(file):
     """ Determine if a loopback device has been allocated for a particular
     file.  If found, return it.  If not, return 0.  Note this is opposite
     normal functions where 0 means success. """
+#   lbmatch = subprocess.Popen(['sudo', 'losetup', '--associated', file],
+#                              stdout=subprocess.PIPE).communicate()[0]
+    # stderr prints 'SOMEFILE: No such file or directory' if not found
+    # TODO: verify trapping stderr here works
     lbmatch = subprocess.Popen(['sudo', 'losetup', '--associated', file],
-                               stdout=subprocess.PIPE).communicate()[0]
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE).communicate()[0]
     lbmatch = ''.join(lbmatch.split())
     if re.match('.*\(' + file + '\).*', str(lbmatch)):
         lbmatch = re.sub(':.*$', '', lbmatch)
@@ -210,8 +235,13 @@ def loopback_exists(file):
 def loopback_cleanup(file):
     """ Attempt to clean up any residual loopback devices associated with a
     particular file which are not in use. """
+#   matches = subprocess.Popen(['sudo', 'losetup', '--all'],
+#                              stdout=subprocess.PIPE).communicate()[0]
+    # stderr prints 'SOMEFILE: No such file or directory' if not found
+    # TODO: verify trapping stderr here works
     matches = subprocess.Popen(['sudo', 'losetup', '--all'],
-                               stdout=subprocess.PIPE).communicate()[0]
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE).communicate()[0]
     for match in str(matches).splitlines():
         if re.match('.*\(' + file + '\)', match):
             loopback_old = re.sub(':.*$', '', match)
@@ -287,7 +317,7 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
     try:
         p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
                               '-i -d ' + lbdevice + "\n" +
-                              "set timeout -1\n" +
+                              "set timeout 5\n" +
                               "expect Passphrase\n" +
                               "send " + password_base +
                               container_file + '\\r' + "\n" +
@@ -322,35 +352,95 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
     """ Encrypt a loopback device. """
     status_item('Encrypting Volume')
     try:
-        p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
-                              '-c -d ' + lbdevice + ' ' +
-                              '-a whirlpool -b AES-256-XTS' + "\n" +
-                              "set timeout -1\n" +
-                              "expect Passphrase\n" +
-                              "send " + password_base +
-                              container_file + '\\r' + "\n" +
-                              "expect Repeat\n" +
-                              "send " + password_base +
-                              container_file + '\\r' + "\n" +
-                              'expect proceed' + "\n" +
-                              'send y' + '\\r' + "\n" +
-                              "expect eof\n" +
-                              'expect done' + "\n" +
-                              '"', stdout=subprocess.PIPE, shell=True)
+        cmd = 'expect -c "spawn sudo tcplay ' + \
+              '-c -d ' + lbdevice + ' ' + \
+              '-a whirlpool -b AES-256-XTS' + "\n" + \
+              "set timeout -1\n" + \
+              "expect Passphrase\n" + \
+              "send " + password_base + \
+              container_file + '\\r' + "\n" + \
+              "expect Repeat\n" + \
+              "send " + password_base + \
+              container_file + '\\r' + "\n" + \
+              'expect proceed' + "\n" + \
+              'send y' + '\\r' + "\n" + \
+              'expect done' + "\n" + \
+              "expect eof\n" + '"'
+        print shlex.split(cmd)
 
-        # TODO: for some reason this *must* be printed out or else we fail
-        # to encrypt properly.
-#       if verbose:
+        p1 = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE,
+                              bufsize=1, close_fds=ON_POSIX)
+
+#       p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
+#                             '-c -d ' + lbdevice + ' ' +
+#                             '-a whirlpool -b AES-256-XTS' + "\n" +
+#                             "set timeout -1\n" +
+#                             "expect Passphrase\n" +
+#                             "send " + password_base +
+#                             container_file + '\\r' + "\n" +
+#                             "expect Repeat\n" +
+#                             "send " + password_base +
+#                             container_file + '\\r' + "\n" +
+#                             'expect proceed' + "\n" +
+#                             'send y' + '\\r' + "\n" +
+#                             'expect done' + "\n" +
+#                             "expect eof\n" +
+#                             '"', stdout=subprocess.PIPE, shell=True,
+#                             bufsize=1, close_fds=ON_POSIX)
+
+        q = Queue()
+        t = Thread(target=enqueue_output, args=(p1.stdout, q))
+#       t = Thread(target=enqueue_output, args=(p1, q))
+        t.daemon = True # thread dies with the program
+        t.start()
+
+        iter = 0
+
+        # Give tcplay a chance to get going before we start SIGUSR1'ing it.
+        time.sleep(0.5)
+        print
+        print
         while not p1.poll():
-            time.sleep(0.5)
-            print 'SIGNAL'
-            subprocess.Popen('sudo killall tcplay --signal SIGUSR1', shell=True)
-#           p1.send_signal(signal.SIGUSR1)
-            print
-            print
-            for line in iter(p1.stdout.readline, ''):
-                print(">>> " + line.rstrip())
-            print
+            # function does not exist as called
+#           print t.enumerate()
+            if iter % 10 == 0:
+#               p2 = subprocess.Popen(
+                subprocess.Popen(
+                    'sudo killall tcplay --signal SIGUSR1',
+                    stderr=subprocess.PIPE, shell=True)
+                # does not work.  output which should be appearing on stderr
+                # is not being captured
+                # result = p2.communicate()[0]
+
+                # print 'result ' + str(result)
+                # if re.match('.*no process found.*', str(result)):
+                #     break
+                # else:
+                #     print 'no match for no process found ' + str(result)
+
+            time.sleep(0.1)
+            try:
+                line = q.get_nowait() # or q.get(timeout=.1)
+            except Empty:
+#               print 'empty pass'
+                pass # no output
+            else:
+                print '>>> ' + line.rstrip()
+                # This does not work.  It indicates the queue is empty
+                # mid-way through the process (during the 'Securely erasing'
+                # segment) and then goes back to being non-empty for the final
+                # phase of tcplay.  Unreliable, unfortunately.
+                if q.empty():
+                    # TODO: this only shows if the stdout buffer is empty or
+                    # not, not if the process has completed
+                    print 'queue empty'
+                else:
+                    pass
+            iter += 1
+            if iter > 9:
+                iter = 0
+        print
+        t.join()
 
 # TODO
 #       if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',

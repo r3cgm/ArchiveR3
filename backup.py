@@ -349,11 +349,7 @@ class backup:
             status_item('Backup')
             status_result('ABORTING...', 3)
             if not self.args.cleanup:
-                status_item('Cleanup')
-                if self.cleanup():
-                    status_result('FAILURE', 3)
-                else:
-                    status_result('SUCCESS', 1)
+                self.cleanup()
             status_item('Safe Quit')
             status_result('SUCCESS', 1)
             pass
