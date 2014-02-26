@@ -366,7 +366,6 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
               'send y' + '\\r' + "\n" + \
               'expect done' + "\n" + \
               "expect eof\n" + '"'
-        print shlex.split(cmd)
 
         p1 = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
 
@@ -788,9 +787,8 @@ def filesystem_format(archive_map, verbose=False):
         p1 = subprocess.Popen(['sudo', 'mkfs.ext4', archive_map],
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         result = p1.communicate()[0]
-        if verbose:
-            print
-            print result
+        print
+        print result
     except subprocess.CalledProcessError, e:
         status_result('FORMAT ERROR ' + str(e), 3)
         return 1
