@@ -368,29 +368,10 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
               "expect eof\n" + '"'
         print shlex.split(cmd)
 
-        p1 = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE,
-                              bufsize=1, close_fds=ON_POSIX)
-
-#       p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
-#                             '-c -d ' + lbdevice + ' ' +
-#                             '-a whirlpool -b AES-256-XTS' + "\n" +
-#                             "set timeout -1\n" +
-#                             "expect Passphrase\n" +
-#                             "send " + password_base +
-#                             container_file + '\\r' + "\n" +
-#                             "expect Repeat\n" +
-#                             "send " + password_base +
-#                             container_file + '\\r' + "\n" +
-#                             'expect proceed' + "\n" +
-#                             'send y' + '\\r' + "\n" +
-#                             'expect done' + "\n" +
-#                             "expect eof\n" +
-#                             '"', stdout=subprocess.PIPE, shell=True,
-#                             bufsize=1, close_fds=ON_POSIX)
+        p1 = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
 
         q = Queue()
         t = Thread(target=enqueue_output, args=(p1.stdout, q))
-#       t = Thread(target=enqueue_output, args=(p1, q))
         t.daemon = True # thread dies with the program
         t.start()
 
@@ -400,57 +381,23 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
         time.sleep(0.5)
         print
         print
-        while not p1.poll():
-            # function does not exist as called
-#           print t.enumerate()
+        while p1.poll() is None:
             if iter % 10 == 0:
-#               p2 = subprocess.Popen(
                 subprocess.Popen(
                     'sudo killall tcplay --signal SIGUSR1',
                     stderr=subprocess.PIPE, shell=True)
-                # does not work.  output which should be appearing on stderr
-                # is not being captured
-                # result = p2.communicate()[0]
 
-                # print 'result ' + str(result)
-                # if re.match('.*no process found.*', str(result)):
-                #     break
-                # else:
-                #     print 'no match for no process found ' + str(result)
-
-            time.sleep(0.1)
             try:
-                line = q.get_nowait() # or q.get(timeout=.1)
+                line = q.get(timeout=0.1) # or q.get(timeout=.1)
             except Empty:
-#               print 'empty pass'
                 pass # no output
             else:
                 print '>>> ' + line.rstrip()
-                # This does not work.  It indicates the queue is empty
-                # mid-way through the process (during the 'Securely erasing'
-                # segment) and then goes back to being non-empty for the final
-                # phase of tcplay.  Unreliable, unfortunately.
-                if q.empty():
-                    # TODO: this only shows if the stdout buffer is empty or
-                    # not, not if the process has completed
-                    print 'queue empty'
-                else:
-                    pass
             iter += 1
             if iter > 9:
                 iter = 0
         print
         t.join()
-
-# TODO
-#       if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
-#                   result, re.DOTALL):
-#           status_result('INCORRECT OR NOT A VALID VOLUME', 3)
-#           return 1
-#       else:
-#           # TODO - this condition will need to be flushed out more once
-#           # we have a legit encrypted volume
-#           status_result('SUCCESS', 1)
 
     except subprocess.CalledProcessError, e:
         status_result('ENCRYPT ERROR', 3)
