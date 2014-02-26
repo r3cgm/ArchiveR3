@@ -39,6 +39,8 @@ class backup:
             'invoking this tool with it.')
         parser.add_argument('config', action='store',
                             help='Specify an ArchiveR3 config file.')
+        parser.add_argument('-c', '--cleanup', action='store_true',
+                            help='Just perform cleanup operations, no backup.')
         parser.add_argument('-n', '--nocleanup', action='store_true',
                             help='Do not perform normal cleanup operations '
                             'after backing up such as unmounting and '
@@ -152,6 +154,10 @@ class backup:
             container = self.config.backup_dir + self.container_file
 
             self.lbdevice = loopback_exists(container)
+
+            if self.args.cleanup:
+                self.cleanup()
+                return 2
 
             arc_block = dir_size(archive_dir, block_size=512)
             if arc_block == -1:
@@ -337,9 +343,11 @@ class backup:
                     status_item('Backup')
                     if rc == 1:
                         status_result('FAILED', 3)
+                    elif rc == 2:
+                        status_result('SKIPPED', 2)
                     else:
                         status_result('SUCCESS', 1)
-
+ 
                     if not self.args.nocleanup:
                         self.cleanup()
 
