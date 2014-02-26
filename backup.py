@@ -39,8 +39,8 @@ class backup:
             'invoking this tool with it.')
         parser.add_argument('config', action='store',
                             help='Specify an ArchiveR3 config file.')
-        parser.add_argument('-c', '--cleanup', action='store_true',
-                            help='Do *not* perform normal cleanup operations '
+        parser.add_argument('-n', '--nocleanup', action='store_true',
+                            help='Do not perform normal cleanup operations '
                             'after backing up such as unmounting and '
                             'unmapping the archive container.')
         parser.add_argument('-v', '--verbose', action='store_true',
@@ -290,14 +290,14 @@ class backup:
                     return 1
                 else:
                     status_item('Reprovision')
-                    status_result('SUCCESS BUT NEED TO RESTART AND MAKE SURE' +
-                                  'NOT RUNNING WITH --cleanup OPTION', 2)
+                    status_result('SUCCESS BUT NEED TO RESTART AND USE' +
+                                  'WITH --nocleanup OPTION', 2)
                     return 1
 
             if sync(archive_dir, self.archive_mount):
                 return 1
 
-            if not self.args.cleanup:
+            if not self.args.nocleanup:
                 self.cleanup()
 
             # Clean up global variables so there is no chance of accidentally
@@ -340,7 +340,7 @@ class backup:
                     else:
                         status_result('SUCCESS', 1)
 
-                    if not self.args.cleanup:
+                    if not self.args.nocleanup:
                         self.cleanup()
 
             print_footer('backup', time_init)
@@ -348,7 +348,7 @@ class backup:
             print
             status_item('Backup')
             status_result('ABORTING...', 3)
-            if not self.args.cleanup:
+            if not self.args.nocleanup:
                 self.cleanup()
             status_item('Safe Quit')
             status_result('SUCCESS', 1)
