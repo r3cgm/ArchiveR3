@@ -33,18 +33,28 @@ class backup:
         """ Process command-line arguments. """
         parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            description='Backup files from a \'local\' to a \'remote\' '
-            'location.  Please be sure to create and edit your config file, '
+            description='Back up files to an archive.  This is performed in '
+            'phases: 1. create a zeroed file archive container, 2. encrypt '
+            'the container, and 3. synchronize files with the archive. '
+            'To specify directories to back up, edit your config file, '
             'for example by copying config.generic to config.mine and '
             'invoking this tool with it.')
         parser.add_argument('config', action='store',
                             help='Specify an ArchiveR3 config file.')
         parser.add_argument('-c', '--cleanup', action='store_true',
-                            help='Just perform cleanup operations, no backup.')
+                            help='Perform cleanup operations only, no '
+                            'backup.  Cleanup consists of unmounting, '
+                            'unmapping, and removing the loopback device '
+                            'associated with the encrypted container.')
         parser.add_argument('-n', '--nocleanup', action='store_true',
                             help='Do not perform normal cleanup operations '
                             'after backing up such as unmounting and '
                             'unmapping the archive container.')
+        parser.add_argument('-s', '--skipbackup', action='store_true',
+                            help='Skip backup.  This can be useful to test '
+                            'basic mounting and unmounting.  Used with '
+                            '--nocleanup this simply mounts the archive and '
+                            'leaves it mounted when the program exits.')
         parser.add_argument('-v', '--verbose', action='store_true',
                             help='Print the status of each file as it is '
                             'being processed.  Otherwise, a progress dot is '
@@ -300,8 +310,9 @@ class backup:
                                   'WITH --nocleanup OPTION', 2)
                     return 1
 
-            if sync(archive_dir, self.archive_mount):
-                return 1
+            if not self.args.skipbackup:
+                if sync(archive_dir, self.archive_mount):
+                    return 1
 
             if not self.args.nocleanup:
                 self.cleanup()
