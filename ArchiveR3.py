@@ -33,14 +33,9 @@ class Unbuffered:
         return getattr(self.stream, attr)
 
 
-# def enqueue_output(process, queue):
 def enqueue_output(out, queue):
-#   if not process.poll():
-#       sys.exit('exiting now!')
-#   out = process.stdout
     for line in iter(out.readline, b''):
         queue.put(line)
-#   out.close()
 
 
 def dir_size(dir, block_size=0):
@@ -58,9 +53,6 @@ def dir_size(dir, block_size=0):
     status_item('Sizing ' + dir)
     for dirpath, dirnames, filenames in os.walk(dir):
         for f in filenames:
-#           if f == '.CFUserTextEncoding':
-#               print 'ding ding ding we found .CFUserTextEncoding'
-
             file_count += 1
             if file_count % 1000 == 0:
                 status_result('.', no_newline=True)
@@ -381,7 +373,7 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
         print
         print
         while p1.poll() is None:
-            if iter % 10 == 0:
+            if iter % 100 == 0:
                 subprocess.Popen(
                     'sudo killall tcplay --signal SIGUSR1',
                     stderr=subprocess.PIPE, shell=True)
@@ -393,7 +385,7 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
             else:
                 print '>>> ' + line.rstrip()
             iter += 1
-            if iter > 9:
+            if iter > 99:
                 iter = 0
         print
         t.join()
