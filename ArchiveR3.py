@@ -62,6 +62,7 @@ def dir_size(dir, block_size=0):
             except OSError:
                 continue
 
+            # TODO
             # os.access() is unreliable.  There is at least one edge case where
             # a remote mounted CIFS share which appears to have readable
             # permissions (by looking at 'ls' output) actually fails to open
@@ -112,8 +113,12 @@ def dir_size(dir, block_size=0):
                 dir_count += 1
                 total_size += block_size
 
+    status_result('')
+    status_item('')
     status_result('DONE', 1, no_newline=True)
     status_result('files ' + str(file_count) + ' dirs ' + str(dir_count))
+    status_item('')
+    status_result('size ' + str(total_size) + ' (' + size(total_size) + ')')
     return total_size
 
 
