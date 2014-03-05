@@ -405,7 +405,10 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
     except Exception, e:
         status_result('ENCRYPT NOT FOUND ' + str(e), 3)
         return 1
+    status_item('')
     status_result('ENCRYPTED', 4)
+    status_item('')
+    status_result('')
 
 
 def config_read(config_file):

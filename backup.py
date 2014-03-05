@@ -47,8 +47,10 @@ class backup:
                             'unmapping, and removing the loopback device '
                             'associated with the encrypted container.')
         parser.add_argument('--create', action='store_true',
-                            help='Create the archive container without '
+                            help='Create the raw archive container without '
                             'prompting.')
+        parser.add_argument('--encrypt', action='store_true',
+                            help='Encrypt the archive without prompting.')
         parser.add_argument('-n', '--nocleanup', action='store_true',
                             help='Do not perform normal cleanup operations '
                             'after backing up such as unmounting and '
@@ -252,8 +254,13 @@ class backup:
             if loopback_encrypted(self.lbdevice, self.config.password_base,
                                   self.config.backup_dir, self.container_file,
                                   self.args.verbose):
-                status_item('!! (RE)ENCRYPT CONTAINER? (y/n)')
-                if raw_input() == 'y':
+                if self.args.encrypt:
+                    status_item('!! (RE)ENCRYPT CONTAINER')
+                    status_result('CONFIRMED', 4)
+                else:
+                    status_item('!! (RE)ENCRYPT CONTAINER? (y/n)')
+
+                if self.args.encrypt or raw_input() == 'y':
                     if loopback_encrypt(self.lbdevice,
                                         self.config.password_base,
                                         self.container_file,
