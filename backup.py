@@ -153,7 +153,12 @@ class backup:
         """ Unmount, unmap, and remove the loopback device associated with
         the encrypted container. """
         # Give the rsync time to gracefully terminate.
-        time.sleep(3)
+        time.sleep(1)
+        status_result('.', 3, no_newline=True)
+        time.sleep(1)
+        status_result('.', 3, no_newline=True)
+        time.sleep(1)
+        status_result('.', 3, no_newline=True)
         if self.archive_mount:
             umount(self.archive_mount)
         if self.container_file:
@@ -387,9 +392,10 @@ class backup:
         except KeyboardInterrupt:
             print
             status_item('Backup')
-            status_result('ABORTING...', 3)
+            status_result('ABORTING', 3, no_newline=True)
             if not self.args.nocleanup:
                 self.cleanup()
+            status_result('')
             status_item('Safe Quit')
             status_result('SUCCESS', 1)
             pass
