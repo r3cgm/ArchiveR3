@@ -51,6 +51,8 @@ class backup:
                             'prompting.')
         parser.add_argument('--encrypt', action='store_true',
                             help='Encrypt the archive without prompting.')
+        parser.add_argument('--format', action='store_true',
+                            help='Encrypt the archive without prompting.')
         parser.add_argument('-n', '--nocleanup', action='store_true',
                             help='Do not perform normal cleanup operations '
                             'after backing up such as unmounting and '
@@ -276,8 +278,12 @@ class backup:
                 return 1
 
             if filesystem_check(archive_map):
-                status_item('!! REFORMAT FILESYSTEM? (y/n)')
-                if raw_input() == 'y':
+                if self.args.format:
+                    status_item('!! (RE)FORMAT FILESYSTEM')
+                    status_result('CONFIRMED', 4)
+                else:
+                    status_item('!! (RE)FORMAT FILESYSTEM? (y/n)')
+                if self.args.format or raw_input() == 'y':
                     if filesystem_format(archive_map, self.args.verbose):
                         return 1
                 else:
