@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
 import ConfigParser
+try:
+    from hurry.filesize import size
+except ImportError, e:
+    print e
+    print 'Hint: try running "pip install hurry.filesize"'
+    sys.exit(1)
 import os
 import re
 import shlex, subprocess
