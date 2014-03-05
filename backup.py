@@ -41,16 +41,20 @@ class backup:
             'invoking this tool with it.')
         parser.add_argument('config', action='store',
                             help='Specify an ArchiveR3 config file.')
+        parser.add_argument('-a', '--auto', action='store_true',
+                            help='Automatically create, encrypt, and format '
+                            'archive without prompting.  Equivalent to '
+                            '--create --encrypt --format')
         parser.add_argument('-c', '--cleanup', action='store_true',
                             help='Perform cleanup operations only, no '
                             'backup.  Cleanup consists of unmounting, '
                             'unmapping, and removing the loopback device '
                             'associated with the encrypted container.')
         parser.add_argument('--create', action='store_true',
-                            help='Create the raw archive container without '
+                            help='Create raw archive container without '
                             'prompting.')
         parser.add_argument('--encrypt', action='store_true',
-                            help='Encrypt the archive without prompting.')
+                            help='Encrypt archive without prompting.')
         parser.add_argument('--format', action='store_true',
                             help='Encrypt the archive without prompting.')
         parser.add_argument('-n', '--nocleanup', action='store_true',
@@ -73,6 +77,10 @@ class backup:
             parser.print_help()
             sys.exit(1)
         self.args = parser.parse_args()
+        if self.args.auto:
+            self.args.create = True
+            self.args.encrypt = True
+            self.args.format = True
 
     def calc_container_overhead(self, container_size):
         """ Given a container size, calculate the expected overhead due
@@ -153,12 +161,13 @@ class backup:
         """ Unmount, unmap, and remove the loopback device associated with
         the encrypted container. """
         # Give the rsync time to gracefully terminate.
+        status_item('Cleaning Up')
+        status_result('.', no_newline=True)
         time.sleep(1)
-        status_result('.', 3, no_newline=True)
+        status_result('.', no_newline=True)
         time.sleep(1)
-        status_result('.', 3, no_newline=True)
+        status_result('.')
         time.sleep(1)
-        status_result('.', 3, no_newline=True)
         if self.archive_mount:
             umount(self.archive_mount)
         if self.container_file:
@@ -385,17 +394,13 @@ class backup:
                     else:
                         status_result('SUCCESS', 1)
  
-                    if not self.args.nocleanup:
-                        self.cleanup()
-
             print_footer('backup', time_init)
         except KeyboardInterrupt:
             print
             status_item('Backup')
-            status_result('ABORTING', 3, no_newline=True)
+            status_result('ABORT', 3)
             if not self.args.nocleanup:
                 self.cleanup()
-            status_result('')
             status_item('Safe Quit')
             status_result('SUCCESS', 1)
             pass

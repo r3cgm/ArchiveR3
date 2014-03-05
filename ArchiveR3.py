@@ -352,6 +352,7 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
 def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
     """ Encrypt a loopback device. """
     status_item('Encrypting Volume')
+    status_result('IN PROGRESS', 2, no_newline=True)
     try:
         cmd = 'expect -c "spawn sudo tcplay ' + \
               '-c -d ' + lbdevice + ' ' + \
@@ -407,8 +408,6 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
         return 1
     status_item('')
     status_result('ENCRYPTED', 4)
-    status_item('')
-    status_result('')
 
 
 def config_read(config_file):
@@ -787,19 +786,22 @@ def filesystem_check(archive_map):
 def filesystem_format(archive_map, verbose=False):
     """ Create an ext4 filesystem on a mapped device. """
     status_item('Filesystem Create')
+    status_result('IN PROGRESS', 2)
     try:
         p1 = subprocess.Popen(['sudo', 'mkfs.ext4', archive_map],
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        result = p1.communicate()[0]
+                              stdout=subprocess.PIPE)
         print
-        print result
+        for line in iter(p1.stdout.readline, ''):
+            print('>>> ' + line.rstrip())
     except subprocess.CalledProcessError, e:
         status_result('FORMAT ERROR ' + str(e), 3)
         return 1
     except Exception, e:
         status_result('FORMAT COMMAND NOT FOUND ' + str(e), 3)
         return 1
-    status_result('FORMAT SUCCESS', 1)
+    print
+    status_item('')
+    status_result('FORMATTED', 4)
 
 
 def print_header(activity):
@@ -839,6 +841,7 @@ def status_item(item):
 def sync(source, target):
     """ Synchronize files from a source to a target location. """
     status_item('Sync')
+    status_result('IN PROGRESS', 2)
     try:
         p1 = subprocess.Popen('sudo rsync ' +
                               '--bwlimit 1300 ' +
@@ -860,9 +863,8 @@ def sync(source, target):
                               source.rstrip('/') + ' ' + target, shell=True,
                               stdout=subprocess.PIPE)
         print
-        print
         for line in iter(p1.stdout.readline, ''):
-            print(">>> " + line.rstrip())
+            print('>>> ' + line.rstrip())
         print
     except subprocess.CalledProcessError, e:
         status_result('ERROR', 3)
@@ -871,7 +873,7 @@ def sync(source, target):
         status_result('NOT FOUND', 3)
         return 1
     status_item('')
-    status_result('SUCCESS', 1)
+    status_result('SYNCHRONIZED', 1)
 
 
 def status_result(result, type=0, no_newline=False):
