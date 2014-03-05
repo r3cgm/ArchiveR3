@@ -46,6 +46,9 @@ class backup:
                             'backup.  Cleanup consists of unmounting, '
                             'unmapping, and removing the loopback device '
                             'associated with the encrypted container.')
+        parser.add_argument('--create', action='store_true',
+                            help='Create the archive container without '
+                            'prompting.')
         parser.add_argument('-n', '--nocleanup', action='store_true',
                             help='Do not perform normal cleanup operations '
                             'after backing up such as unmounting and '
@@ -94,8 +97,13 @@ class backup:
         """ Create an encrypted container.  The resulting containersize is only
         accurate to the nearest megabyte.  Return 1 if any problems or 0 for
         success. """
-        status_item('!! CREATE CONTAINER? (y/n)')
-        if raw_input() == 'y':
+        if self.args.create:
+            status_item('!! CREATE CONTAINER')
+            status_result('CONFIRMED', 4)
+        else:
+            status_item('!! CREATE CONTAINER? (y/n)')
+
+        if self.args.create or raw_input() == 'y':
             archive_size = int(float(arc_block) /
                                float(self.config.provision_capacity_percent)
                                * 100)
