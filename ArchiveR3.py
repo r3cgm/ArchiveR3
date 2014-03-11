@@ -697,9 +697,10 @@ def mount_check(archive_map, archive_mount, mountcreate=False):
         status_result('MOUNTED', 4)
 
 
-def umount(mount_point):
+def umount(mount_point, remove=False):
     """ Perform an umount operation to release a filesystem, typically during
-    cleanup.  Operation is performed via sudo.  Return 1 if problems. """
+    cleanup.  Operation is performed via sudo.  Optionally remove the mount
+    point.  Return 1 if problems. """
     devnull = open('/dev/null', 'w')
     try:
         subprocess.check_call(['sudo', 'umount', mount_point], stderr=devnull)
@@ -716,6 +717,14 @@ def umount(mount_point):
         return 1
     status_item(mount_point)
     status_result('UNMOUNTED', 4)
+    if remove:
+        status_item(mount_point)
+        try:
+            subprocess.call(['sudo', 'rmdir', mount_point])
+        except:
+            status_result('REMOVAL FAILED', 1)
+            return 1
+        status_result('REMOVED', 4)
 
 
 def unmap(container_file):

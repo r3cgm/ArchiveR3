@@ -162,8 +162,8 @@ class backup:
             return 1
 
     def cleanup(self):
-        """ Unmount, unmap, and remove the loopback device associated with
-        the encrypted container. """
+        """ Unmount, remove mount point, unmap, and remove the loopback
+        device associated with the encrypted container. """
         # Give the rsync time to gracefully terminate.
         status_item('Cleaning Up')
         status_result('.', no_newline=True)
@@ -173,7 +173,7 @@ class backup:
         status_result('.')
         time.sleep(1)
         if self.archive_mount:
-            umount(self.archive_mount)
+            umount(self.archive_mount, remove=True)
         if self.container_file:
             unmap(self.container_file)
         if self.lbdevice:
