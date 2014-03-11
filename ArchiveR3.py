@@ -13,7 +13,6 @@ import shlex, subprocess
 import struct
 import subprocess
 import sys
-# import threading
 import time
 from threading import Thread
 
@@ -126,17 +125,25 @@ def dir_size(dir, block_size=0):
     return total_size
 
 
-def dir_validate(dir, create=0, write=0, read=0, sudo=0):
-    """ Validate that a directory exists.  Optionally specify create=1 to
-    prompt the user to create it.  Specify write=1 to create (and remove) a
-    test file.  Specify read=1 to read any random file from the directory.
-    Specify sudo=1 to perform mkdir operations with root-level privileges.
+def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
+    """ Validate that a directory exists.
+    
+    Optional parameters:
+
+      auto=True         create the directory automatically; requires create=1
+      create=True       prompt the user to create it
+      read=True         read any random file from the directory
+      sudo=True         perform mkdir operations with root-level privileges
+      write=True        create (and remove) a test file
+
     Return 1 if no valid directory exists at the end of this function. """
     if not os.path.exists(dir):
         if create:
             status_result('NOT FOUND ', 2)
             status_item('Create? (y/n)')
-            if raw_input() == 'y':
+            if auto:
+                status_result('CONFIRMED', 4)
+            if auto or raw_input() == 'y':
                 status_item(dir)
                 if sudo:
                     try:
@@ -662,11 +669,12 @@ def mapper_check(lbdevice, archive_map, container_file, password_base,
             return 1
 
 
-def mount_check(archive_map, archive_mount):
+def mount_check(archive_map, archive_mount, mountcreate=False):
     """ Determine if the directory where an encrypted container will be
-    mounted exists. """
+    mounted exists.  If mountcreate is True then the directory will be
+    automatically created. """
     status_item('Mount Point ' + archive_mount)
-    if dir_validate(archive_mount, create=True, sudo=True):
+    if dir_validate(archive_mount, create=True, sudo=True, auto=mountcreate):
         return 1
 
     status_item('Mount Check')

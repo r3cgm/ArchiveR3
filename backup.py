@@ -42,9 +42,10 @@ class backup:
         parser.add_argument('config', action='store',
                             help='Specify an ArchiveR3 config file.')
         parser.add_argument('-a', '--auto', action='store_true',
-                            help='Automatically create, encrypt, and format '
-                            'archive without prompting.  Equivalent to '
-                            '--create --encrypt --format')
+                            help='Automatically create, encrypt, format, '
+                            'mount, and archive without prompting.  '
+                            'Equivalent to --create --encrypt --format'
+                            '--mountcreate')
         parser.add_argument('-c', '--cleanup', action='store_true',
                             help='Perform cleanup operations only, no '
                             'backup.  Cleanup consists of unmounting, '
@@ -57,6 +58,8 @@ class backup:
                             help='Encrypt archive without prompting.')
         parser.add_argument('--format', action='store_true',
                             help='Encrypt the archive without prompting.')
+        parser.add_argument('--mountcreate', action='store_true',
+                            help='Create the mount point automatically.')
         parser.add_argument('-n', '--nocleanup', action='store_true',
                             help='Do not perform normal cleanup operations '
                             'after backing up such as unmounting and '
@@ -81,6 +84,7 @@ class backup:
             self.args.create = True
             self.args.encrypt = True
             self.args.format = True
+            self.args.mountcreate = True
 
     def calc_container_overhead(self, container_size):
         """ Given a container size, calculate the expected overhead due
@@ -303,7 +307,8 @@ class backup:
                 else:
                     return 1
 
-            if mount_check(archive_map, self.archive_mount):
+            if mount_check(archive_map, self.archive_mount,
+                mountcreate=self.args.mountcreate):
                 return 1
 
             stat = os.statvfs(self.archive_mount)
