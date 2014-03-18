@@ -185,7 +185,11 @@ def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
             status_item('')
             status_result(dir + test_file, 2)
             return 1
-        file = open(dir + test_file, 'w')
+        try:
+            file = open(dir + test_file, 'w')
+        except IOError:
+            status_result('NOT WRITEABLE', 3)
+            return 1
         file.write('test write')
         file.close()
         if os.path.isfile(dir + test_file):
@@ -400,11 +404,6 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
             if iter % 100 == 0:
                 cmd = 'sudo killall tcplay --signal SIGUSR1'
                 subprocess.Popen(shlex.split(cmd), stderr=subprocess.PIPE)
-
-#               subprocess.Popen(
-#                   'sudo killall tcplay --signal SIGUSR1',
-#                   stderr=subprocess.PIPE, shell=True)
-
             try:
                 line = q.get(timeout=0.1) # or q.get(timeout=.1)
             except Empty:
