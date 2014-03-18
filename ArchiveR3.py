@@ -43,6 +43,11 @@ def enqueue_output(out, queue):
         queue.put(line)
 
 
+def print_pipe(type_type, pipe):
+    for line in iter(pipe.readline, ''):
+        print('    ' + line.rstrip())
+
+
 def dir_size(dir, block_size=0):
     """ Calculate the size of a directory by recursively adding up the size of
     all files within, recursively.  This does not double-count any symlinks or
@@ -323,15 +328,15 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
         return 1
 
     try:
-        p1 = subprocess.Popen('expect -c "spawn sudo tcplay ' +
-                              '-i -d ' + lbdevice + "\n" +
-                              "set timeout 5\n" +
-                              "expect Passphrase\n" +
-                              "send " + password_base +
-                              container_file + '\\r' + "\n" +
-                              "expect eof\n" +
-                              '"', stdout=subprocess.PIPE, shell=True)
-        result = p1.communicate()[0]
+        p = subprocess.Popen('expect -c "spawn sudo tcplay ' +
+                             '-i -d ' + lbdevice + "\n" +
+                             "set timeout 5\n" +
+                             "expect Passphrase\n" +
+                             "send " + password_base +
+                             container_file + '\\r' + "\n" +
+                             "expect eof\n" +
+                             '"', stdout=subprocess.PIPE, shell=True)
+        result = p.communicate()[0]
         if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
                     result, re.DOTALL):
             status_result('BAD PASSWORD / CORRUPTED', 3)
@@ -415,6 +420,7 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
         return 1
     status_item('')
     status_result('ENCRYPTED', 4)
+    print
 
 
 def config_read(config_file):
@@ -746,20 +752,27 @@ def unmap(container_file):
 def mapper_container(lbdevice, container_file, password_base, verbose=False):
     """ Map an encrypted container as a loopback device. """
     try:
-        result = subprocess.Popen('expect -c "spawn sudo tcplay ' +
-                                  '-m ' + container_file + ' ' +
-                                  '-d ' + lbdevice + "\n" +
-                                  "set timeout -1\n" +
-                                  "expect Passphrase\n" +
-                                  "send " + password_base +
-                                  container_file + '\\r' + "\n" +
-                                  "expect All\n" +
-                                  "expect eof\n" +
-                                  '"', stdout=subprocess.PIPE,
-                                  shell=True).communicate()[0]
-        if verbose:
-            print
-            print result
+        cmd = 'expect -c "spawn sudo tcplay ' + \
+              '-m ' + container_file + ' ' + \
+              '-d ' + lbdevice + "\n" + \
+              "set timeout -1\n" + \
+              "expect Passphrase\n" + \
+              "send " + password_base + \
+              container_file + '\\r' + "\n" + \
+              "expect All\n" + \
+              "expect eof\n" + \
+              '"'
+
+        p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        print
+        t1 = Thread(target=print_pipe, args=('stdout', p.stdout,))
+        t1.start()
+        t2 = Thread(target=print_pipe, args=('stderr', p.stderr,))
+        t2.start()
+        t1.join()
+        t2.join()
+        print
 
     except subprocess.CalledProcessError, e:
         status_result('COMMAND ERROR ' + str(e), 3)
@@ -769,8 +782,10 @@ def mapper_container(lbdevice, container_file, password_base, verbose=False):
         return 1
 
     if os.path.islink('/dev/mapper/' + container_file):
+        status_item('')
         status_result('MAPPED', 4)
     else:
+        status_item('')
         status_result('MAPPING FAILURE', 3)
         status_item('')
         status_result('POSSIBLE CORRUPTION', 3)
@@ -804,10 +819,6 @@ def filesystem_format(archive_map, verbose=False):
     """ Create an ext4 filesystem on a mapped device. """
     status_item('Filesystem Create')
     status_result('IN PROGRESS', 2)
-    def print_pipe(type_type, pipe):
-        for line in iter(pipe.readline, ''):
-            print('    ' + line.rstrip())
-
     try:
         p = subprocess.Popen(['sudo', 'mkfs.ext4', archive_map],
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -818,8 +829,6 @@ def filesystem_format(archive_map, verbose=False):
         t2.start()
         t1.join()
         t2.join()
-#       for line in iter(p1.stdout.readline, ''):
-#           print('    ' + line.rstrip())
     except subprocess.CalledProcessError, e:
         status_result('FORMAT ERROR ' + str(e), 3)
         return 1
@@ -889,11 +898,15 @@ def sync(source, target, bwlimit=1300):
               '--itemize-changes ' + \
               source.rstrip('/') + ' ' + target
 
-        p1 = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
-
+        p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
         print
-        for line in iter(p1.stdout.readline, ''):
-            print('    ' + line.rstrip())
+        t1 = Thread(target=print_pipe, args=('stdout', p.stdout,))
+        t1.start()
+        t2 = Thread(target=print_pipe, args=('stderr', p.stderr,))
+        t2.start()
+        t1.join()
+        t2.join()
         print
     except subprocess.CalledProcessError, e:
         status_result('ERROR', 3)
