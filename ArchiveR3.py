@@ -328,14 +328,16 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
         return 1
 
     try:
-        p = subprocess.Popen('expect -c "spawn sudo tcplay ' +
-                             '-i -d ' + lbdevice + "\n" +
-                             "set timeout 5\n" +
-                             "expect Passphrase\n" +
-                             "send " + password_base +
-                             container_file + '\\r' + "\n" +
-                             "expect eof\n" +
-                             '"', stdout=subprocess.PIPE, shell=True)
+        cmd = 'expect -c "spawn sudo tcplay ' + \
+              '-i -d ' + lbdevice + "\n" + \
+              "set timeout 5\n" + \
+              "expect Passphrase\n" + \
+              "send " + password_base + \
+              container_file + '\\r' + "\n" + \
+              "expect eof\n" + \
+              '"'
+        p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
         result = p.communicate()[0]
         if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
                     result, re.DOTALL):
@@ -381,10 +383,10 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
               'expect done' + "\n" + \
               "expect eof\n" + '"'
 
-        p1 = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
+        p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
 
         q = Queue()
-        t = Thread(target=enqueue_output, args=(p1.stdout, q))
+        t = Thread(target=enqueue_output, args=(p.stdout, q))
         t.daemon = True # thread dies with the program
         t.start()
 
@@ -394,11 +396,14 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
         time.sleep(0.5)
         print
         print
-        while p1.poll() is None:
+        while p.poll() is None:
             if iter % 100 == 0:
-                subprocess.Popen(
-                    'sudo killall tcplay --signal SIGUSR1',
-                    stderr=subprocess.PIPE, shell=True)
+                cmd = 'sudo killall tcplay --signal SIGUSR1'
+                subprocess.Popen(shlex.split(cmd), stderr=subprocess.PIPE)
+
+#               subprocess.Popen(
+#                   'sudo killall tcplay --signal SIGUSR1',
+#                   stderr=subprocess.PIPE, shell=True)
 
             try:
                 line = q.get(timeout=0.1) # or q.get(timeout=.1)
