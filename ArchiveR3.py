@@ -671,6 +671,7 @@ def mapper_check(lbdevice, archive_map, container_file, password_base,
     if os.path.islink('/dev/mapper/' + container_file):
         status_result('FOUND MAP', 1)
     else:
+        status_result('IN PROGRESS', 2)
         if mapper_container(lbdevice, container_file, password_base, verbose):
             return 1
 
@@ -784,6 +785,7 @@ def mapper_container(lbdevice, container_file, password_base, verbose=False):
     if os.path.islink('/dev/mapper/' + container_file):
         status_item('')
         status_result('MAPPED', 4)
+        print
     else:
         status_item('')
         status_result('MAPPING FAILURE', 3)
