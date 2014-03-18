@@ -400,7 +400,7 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
             except Empty:
                 pass # no output
             else:
-                print '>>> ' + line.rstrip()
+                print '    ' + line.rstrip()
             iter += 1
             if iter > 99:
                 iter = 0
@@ -804,21 +804,31 @@ def filesystem_format(archive_map, verbose=False):
     """ Create an ext4 filesystem on a mapped device. """
     status_item('Filesystem Create')
     status_result('IN PROGRESS', 2)
+    def print_pipe(type_type, pipe):
+        for line in iter(pipe.readline, ''):
+            print('    ' + line.rstrip())
+
     try:
-        p1 = subprocess.Popen(['sudo', 'mkfs.ext4', archive_map],
-                              stdout=subprocess.PIPE)
+        p = subprocess.Popen(['sudo', 'mkfs.ext4', archive_map],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print
-        for line in iter(p1.stdout.readline, ''):
-            print('>>> ' + line.rstrip())
+        t1 = Thread(target=print_pipe, args=('stdout', p.stdout,))
+        t1.start()
+        t2 = Thread(target=print_pipe, args=('stderr', p.stderr,))
+        t2.start()
+        t1.join()
+        t2.join()
+#       for line in iter(p1.stdout.readline, ''):
+#           print('    ' + line.rstrip())
     except subprocess.CalledProcessError, e:
         status_result('FORMAT ERROR ' + str(e), 3)
         return 1
     except Exception, e:
         status_result('FORMAT COMMAND NOT FOUND ' + str(e), 3)
         return 1
-    print
     status_item('')
     status_result('FORMATTED', 4)
+    print
 
 
 def print_header(activity):
@@ -883,7 +893,7 @@ def sync(source, target, bwlimit=1300):
 
         print
         for line in iter(p1.stdout.readline, ''):
-            print('>>> ' + line.rstrip())
+            print('    ' + line.rstrip())
         print
     except subprocess.CalledProcessError, e:
         status_result('ERROR', 3)
@@ -893,6 +903,7 @@ def sync(source, target, bwlimit=1300):
         return 1
     status_item('')
     status_result('SYNCHRONIZED', 1)
+    print
 
 
 def status_result(result, type=0, no_newline=False):
