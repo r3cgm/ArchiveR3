@@ -48,8 +48,12 @@ class backup:
                             '--mountcreate')
         parser.add_argument('-b', '--bwlimit', type=int,
                             help='Bandwidth limit during synchronization '
-                            'in KBps.  A value of 0 means no limit.',
-                            default=1300)
+                            'in KBps.  A value of 0 means no limit. '
+                            'Removing the bandwidth limit can be useful if '
+                            'for example the archive is being created on a '
+                            'local filesystem where you do not care about '
+                            'saturating the connection and want to write '
+                            'as quickly as possible.', default=1300)
         parser.add_argument('-c', '--cleanup', action='store_true',
                             help='Perform cleanup operations only, no '
                             'backup.  Cleanup consists of unmounting, '
