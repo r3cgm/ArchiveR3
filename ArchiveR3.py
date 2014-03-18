@@ -855,30 +855,32 @@ def status_item(item):
     sys.stdout.write('%38s: ' % item)
 
 
-def sync(source, target):
+def sync(source, target, bwlimit=1300):
     """ Synchronize files from a source to a target location. """
     status_item('Sync')
     status_result('IN PROGRESS', 2)
     try:
-        p1 = subprocess.Popen('sudo rsync ' +
-                              '--bwlimit 1300 ' +
-                              '--compress ' +
-                              '--recursive ' +
-                              '--links ' +
-                              '--perms ' +
-                              '--times ' +
-                              '--group ' +
-                              '--owner ' +
-                              '--partial ' +
-                              '--verbose ' +
-                              '--progress ' +
-                              '--delete ' +
-                              '--delete-delay ' +
-                              '--max-delete=100 ' +
-                              '--human-readable ' +
-                              '--itemize-changes ' +
-                              source.rstrip('/') + ' ' + target, shell=True,
-                              stdout=subprocess.PIPE)
+        cmd = 'sudo rsync ' \
+              '--bwlimit ' + str(bwlimit) + ' ' + \
+              '--compress ' + \
+              '--recursive ' + \
+              '--links ' + \
+              '--perms ' + \
+              '--times ' + \
+              '--group ' + \
+              '--owner ' + \
+              '--partial ' + \
+              '--verbose ' + \
+              '--progress ' + \
+              '--delete ' + \
+              '--delete-delay ' + \
+              '--max-delete=100 ' + \
+              '--human-readable ' + \
+              '--itemize-changes ' + \
+              source.rstrip('/') + ' ' + target
+
+        p1 = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
+
         print
         for line in iter(p1.stdout.readline, ''):
             print('>>> ' + line.rstrip())
@@ -887,7 +889,7 @@ def sync(source, target):
         status_result('ERROR', 3)
         return 1
     except Exception, e:
-        status_result('NOT FOUND', 3)
+        status_result('NOT FOUND ' + str(e), 3)
         return 1
     status_item('')
     status_result('SYNCHRONIZED', 1)

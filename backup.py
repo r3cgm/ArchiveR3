@@ -46,6 +46,10 @@ class backup:
                             'mount, and archive without prompting.  '
                             'Equivalent to --create --encrypt --format'
                             '--mountcreate')
+        parser.add_argument('-b', '--bwlimit', type=int,
+                            help='Bandwidth limit during synchronization '
+                            'in KBps.  A value of 0 means no limit.',
+                            default=1300)
         parser.add_argument('-c', '--cleanup', action='store_true',
                             help='Perform cleanup operations only, no '
                             'backup.  Cleanup consists of unmounting, '
@@ -351,7 +355,7 @@ class backup:
                     return 1
 
             if not self.args.skipbackup:
-                if sync(archive_dir, self.archive_mount):
+                if sync(archive_dir, self.archive_mount, self.args.bwlimit):
                     return 1
 
             if not self.args.nocleanup:
@@ -390,6 +394,13 @@ class backup:
                 else:
                     status_item('Configuration')
                     status_result('VALIDATED', 1)
+
+                    status_item('Bandwidth')
+                    if self.args.bwlimit:
+                        status_result(str(self.args.bwlimit))
+                    else:
+                        status_result(str(self.args.bwlimit), 2)
+ 
                     rc = self.backup()
                     status_item('Backup')
                     if rc == 1:
@@ -398,7 +409,6 @@ class backup:
                         status_result('SKIPPED', 2)
                     else:
                         status_result('SUCCESS', 1)
- 
             print_footer('backup', time_init)
         except KeyboardInterrupt:
             print
