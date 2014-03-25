@@ -280,9 +280,13 @@ def loopback_next():
         return result.strip()
 
 
-def loopback_setup(lbdevice, file):
+def loopback_setup(lbdevice, file, verbose=False):
     """ Associate a loopback device with a file.  Return 1 if failure or 0
     if successful. """
+    if verbose:
+        status_item('Command')
+        status_result('sudo losetup --verbose ' + lbdevice + ' ' + file)
+
     status_item(lbdevice)
     result = subprocess.Popen(['sudo', 'losetup', '--verbose', lbdevice, file],
                               stdout=subprocess.PIPE).communicate()[0]
@@ -313,6 +317,10 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
                        verbose=False):
     """ Perform tests to determine if the loopback device is a valid
     encrypted container. """
+    if verbose:
+        status_item('Command')
+        status_result('sudo tcplay -i -d ' + lbdevice)
+
     status_item('Container Integrity')
     sum = 0
     file = open(backup_dir + container_file, 'rb')
@@ -369,8 +377,6 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
 
 def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
     """ Encrypt a loopback device. """
-    status_item('Encrypting Volume')
-    status_result('IN PROGRESS', 2, no_newline=True)
     try:
         cmd = 'expect -c "spawn sudo tcplay ' + \
               '-c -d ' + lbdevice + ' ' + \
@@ -386,6 +392,13 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
               'send y' + '\\r' + "\n" + \
               'expect done' + "\n" + \
               "expect eof\n" + '"'
+
+        if verbose:
+            status_item('Command')
+            status_result(cmd)
+
+        status_item('Encrypting Volume')
+        status_result('IN PROGRESS', 2, no_newline=True)
 
         p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
 
@@ -680,10 +693,14 @@ def mapper_check(lbdevice, archive_map, container_file, password_base,
             return 1
 
 
-def mount_check(archive_map, archive_mount, mountcreate=False):
+def mount_check(archive_map, archive_mount, mountcreate=False, verbose=False):
     """ Determine if the directory where an encrypted container will be
     mounted exists.  If mountcreate is True then the directory will be
     automatically created. """
+    if verbose:
+        status_item('Command')
+        status_result('sudo mountpoint ' + archive_mount)
+
     status_item('Mount Point ' + archive_mount)
     if dir_validate(archive_mount, create=True, sudo=True, auto=mountcreate):
         return 1
@@ -768,6 +785,11 @@ def mapper_container(lbdevice, container_file, password_base, verbose=False):
               "expect eof\n" + \
               '"'
 
+        if verbose:
+            status_item('Command')
+            status_result('sudo tcplay -m ' + container_file + ' -d ' + \
+                          lbdevice)
+
         p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         print
@@ -826,6 +848,10 @@ def filesystem_format(archive_map, verbose=False):
     status_item('Filesystem Create')
     status_result('IN PROGRESS', 2)
     try:
+        if verbose:
+            status_item('Command')
+            status_result('sudo mkfs.ext4 ' + archive_map)
+
         p = subprocess.Popen(['sudo', 'mkfs.ext4', archive_map],
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print

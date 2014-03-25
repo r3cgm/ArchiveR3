@@ -147,6 +147,7 @@ class backup:
             status_result('IN PROGRESS', 2)
             try:
                 print
+
                 # TODO: need to convert this into a scheme which is not
                 # dependent on Unix pipes
 #               cmd = 'dd if=/dev/zero bs=1048576 ' + \
@@ -158,6 +159,12 @@ class backup:
 #                     'of=' + container
 
 #               subprocess.check_call(shlex.split(cmd), shell=True)
+
+                if self.args.verbose:
+                    status_item('Command')
+                    status_result('dd if=/dev/zero bs=1048576 status=none ' + \
+                                  'count=' + str(container_size_needed_m) + \
+                                  ' ' + 'of=' + container)
 
                 subprocess.check_call('dd if=/dev/zero bs=1048576 ' +
                                       'status=none ' +
@@ -288,7 +295,7 @@ class backup:
                 self.lbdevice = loopback_next()
                 if not self.lbdevice:
                     return 1
-                if loopback_setup(self.lbdevice, container):
+                if loopback_setup(self.lbdevice, container, self.args.verbose):
                     return 1
 
             if loopback_encrypted(self.lbdevice, self.config.password_base,
@@ -328,7 +335,7 @@ class backup:
                     return 1
 
             if mount_check(archive_map, self.archive_mount,
-                mountcreate=self.args.mountcreate):
+                mountcreate=self.args.mountcreate, verbose=self.args.verbose):
                 return 1
 
             stat = os.statvfs(self.archive_mount)
@@ -421,6 +428,8 @@ class backup:
                     status_item('Backup')
                     if rc == 1:
                         status_result('FAILED', 3)
+                        if not self.args.nocleanup:
+                            self.cleanup()
                     elif rc == 2:
                         status_result('SKIPPED', 2)
                     else:
