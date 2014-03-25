@@ -146,8 +146,6 @@ class backup:
             status_item('Generating Container')
             status_result('IN PROGRESS', 2)
             try:
-                print
-
                 # TODO: need to convert this into a scheme which is not
                 # dependent on Unix pipes
 #               cmd = 'dd if=/dev/zero bs=1048576 ' + \
@@ -165,6 +163,8 @@ class backup:
                     status_result('dd if=/dev/zero bs=1048576 status=none ' + \
                                   'count=' + str(container_size_needed_m) + \
                                   ' ' + 'of=' + container)
+
+                print
 
                 subprocess.check_call('dd if=/dev/zero bs=1048576 ' +
                                       'status=none ' +
