@@ -232,11 +232,13 @@ class backup:
                 status_result('FAILED', 3)
                 return 1
 
-            status_item(self.container_file)
+            status_item('Container')
+            status_result(container)
+            status_item('')
             if os.path.isfile(container):
-                status_result('CONTAINER FOUND', 1)
+                status_result('FOUND', 1)
             else:
-                status_result('CONTAINER NOT FOUND', 2)
+                status_result('NOT FOUND', 2)
                 if self.create_archive(self.config.archive_list[i],
                                        container, self.config.backup_dir,
                                        arc_block):

@@ -69,7 +69,7 @@ def dir_size(dir, block_size=0):
     file_count = 0
     dir_count = 0
     seen = {}
-    status_item('Sizing ' + dir)
+    status_item('Inventory')
     for dirpath, dirnames, filenames in os.walk(dir):
         for f in filenames:
             file_count += 1
@@ -296,9 +296,11 @@ def loopback_setup(lbdevice, file, verbose=False):
         status_item('Command')
         status_result('sudo losetup --verbose ' + lbdevice + ' ' + file)
 
-    status_item(lbdevice)
+    status_item('Loopback Device')
+    status_result(lbdevice)
     result = subprocess.Popen(['sudo', 'losetup', '--verbose', lbdevice, file],
                               stdout=subprocess.PIPE).communicate()[0]
+    status_item('')
     if re.match('.*Loop device is ' + str(lbdevice) + '.*', result):
         status_result('LOOPBACKED', 4)
         return 0
@@ -330,7 +332,7 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
         status_item('Command')
         status_result('sudo tcplay -i -d ' + lbdevice)
 
-    status_item('Container Integrity')
+    status_item('Encryption Integrity')
     sum = 0
     file = open(backup_dir + container_file, 'rb')
     count = 0
@@ -342,10 +344,8 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
         integer = struct.unpack('i', integer_file)[0]
         count += 1
     file.close()
-    if sum:
-        status_result('BINARY,', 1, no_newline=True)
-    else:
-        status_result('INVALID', 2)
+    if not sum:
+        status_result('EMPTY FILE?', 2)
         return 1
 
     try:
@@ -365,7 +365,7 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
             status_result('BAD PASSWORD / CORRUPTED', 3)
             return 1
         elif re.match('.*PBKDF2.*', result, re.DOTALL):
-            status_result('PASSWORD VERIFIED', 1)
+            status_result('PASSWORD VALID', 1)
             if verbose:
                 print
                 print result
@@ -693,7 +693,7 @@ def normalize_dir(dir):
 def mapper_check(lbdevice, archive_map, container_file, password_base,
                  verbose=False):
     """ Verify we have a container mapping and offer to create one if not. """
-    status_item('Mapping')
+    status_item('Mapped Device')
     status_result(archive_map)
     if os.path.islink('/dev/mapper/' + container_file):
         status_item('/dev/mapper' + container_file)
@@ -711,7 +711,9 @@ def mount_check(archive_map, archive_mount, mountcreate=False, verbose=False):
         status_item('Command')
         status_result('sudo mountpoint ' + archive_mount)
 
-    status_item('Mount Point ' + archive_mount)
+    status_item('Mount Point')
+    status_result(archive_mount)
+    status_item('')
     if dir_validate(archive_mount, create=True, sudo=True, auto=mountcreate):
         return 1
 
@@ -800,7 +802,7 @@ def mapper_container(lbdevice, container_file, password_base, verbose=False):
             status_result('sudo tcplay -m ' + container_file + ' -d ' + \
                           lbdevice)
 
-        status_item('Encrypted Container')
+        status_item('')
         child = pexpect.spawn('sudo tcplay -m ' + container_file + ' -d ' + \
                               lbdevice)
         # security risk to enable this, but useful for debugging
@@ -837,14 +839,14 @@ def mapper_container(lbdevice, container_file, password_base, verbose=False):
 def filesystem_check(archive_map):
     """ Verify the integrity of an ext4 filesystem within an encrypted
     container. """
-    status_item('Filesystem Check')
+    status_item('Filesystem')
     devnull = open('/dev/null', 'w')
     try:
         subprocess.check_call(['sudo', 'e2fsck', '-n', archive_map],
                               stdout=devnull, stderr=devnull)
     except subprocess.CalledProcessError, e:
         if re.match('.*status 8.*', str(e)):
-            status_result('FILESYSTEM INVALID', 2)
+            status_result('INVALID', 2)
             return 1
     except Exception, e:
         print 'error ' + str(e)
