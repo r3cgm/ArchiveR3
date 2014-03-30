@@ -693,11 +693,12 @@ def normalize_dir(dir):
 def mapper_check(lbdevice, archive_map, container_file, password_base,
                  verbose=False):
     """ Verify we have a container mapping and offer to create one if not. """
-    status_item(archive_map)
+    status_item('Mapping')
+    status_result(archive_map)
     if os.path.islink('/dev/mapper/' + container_file):
+        status_item('/dev/mapper' + container_file)
         status_result('FOUND MAP', 1)
     else:
-        status_result('IN PROGRESS', 2)
         if mapper_container(lbdevice, container_file, password_base, verbose):
             return 1
 
@@ -799,16 +800,19 @@ def mapper_container(lbdevice, container_file, password_base, verbose=False):
             status_result('sudo tcplay -m ' + container_file + ' -d ' + \
                           lbdevice)
 
-        p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        print
-        t1 = Thread(target=print_pipe, args=('stdout', p.stdout,))
-        t1.start()
-        t2 = Thread(target=print_pipe, args=('stderr', p.stderr,))
-        t2.start()
-        t1.join()
-        t2.join()
-        print
+        status_item('Encrypted Container')
+        child = pexpect.spawn('sudo tcplay -m ' + container_file + ' -d ' + \
+                              lbdevice)
+        # security risk to enable this, but useful for debugging
+        # child.logfile = sys.stdout
+        child.expect('Passphrase')
+        child.sendline(password_base + container_file + "\r")
+        child.expect(pexpect.EOF)
+        if re.match('.*All ok!.*', str(child.before), re.DOTALL):
+            status_result('MAPPED,', 4, no_newline=True)
+        else:
+            status_result('FAIL', 3)
+            return 1
 
     except subprocess.CalledProcessError, e:
         status_result('COMMAND ERROR ' + str(e), 3)
@@ -818,12 +822,9 @@ def mapper_container(lbdevice, container_file, password_base, verbose=False):
         return 1
 
     if os.path.islink('/dev/mapper/' + container_file):
-        status_item('')
-        status_result('MAPPED', 4)
-        print
+        status_result('VERIFIED', 1)
     else:
-        status_item('')
-        status_result('MAPPING FAILURE', 3)
+        status_result('FAILURE', 3)
         status_item('')
         status_result('POSSIBLE CORRUPTION', 3)
         status_item('')
