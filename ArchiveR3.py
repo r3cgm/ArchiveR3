@@ -1,5 +1,15 @@
 #!/usr/bin/env python
 
+# System libraries
+import re
+import shlex, subprocess
+import struct
+import subprocess
+import sys
+import time
+from threading import Thread
+
+# Additional libraries
 import ConfigParser
 try:
     from hurry.filesize import size
@@ -8,13 +18,12 @@ except ImportError, e:
     print 'Hint: try running "pip install hurry.filesize"'
     sys.exit(1)
 import os
-import re
-import shlex, subprocess
-import struct
-import subprocess
-import sys
-import time
-from threading import Thread
+try:
+    import pexpect
+except ImportError, e:
+    print e
+    print 'Hint: try running "pip install pexpect"'
+    sys.exit(1)
 
 # https://stackoverflow.com/questions/375427/non-blocking-read-on-a-subprocess-pipe-in-python
 try:
