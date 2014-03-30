@@ -348,7 +348,7 @@ class backup:
                 status_result('PROBE FAILED', 3)
                 return 1
 
-            status_item('Actual Consumption')
+            status_item('Anticipated Consumption')
 
             capacity_act = float(arc_block) / float(cryptfs_size) * 100
 
