@@ -418,11 +418,11 @@ class backup:
                     status_item('Configuration')
                     status_result('VALIDATED', 1)
 
-                    status_item('Bandwidth')
+                    status_item('Bandwidth Limit')
                     if self.args.bwlimit:
-                        status_result(str(self.args.bwlimit))
+                        status_result(str(self.args.bwlimit) + ' KBps')
                     else:
-                        status_result(str(self.args.bwlimit), 2)
+                        status_result('NONE', 1)
  
                     rc = self.backup()
                     status_item('Backup')
