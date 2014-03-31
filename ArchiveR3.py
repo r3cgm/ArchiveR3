@@ -770,41 +770,28 @@ def unmap(container_file):
 def mapper_container(lbdevice, container_file, password_base, verbose=False):
     """ Map an encrypted container as a loopback device. """
     try:
-        cmd = 'expect -c "spawn sudo tcplay ' + \
-              '-m ' + container_file + ' ' + \
-              '-d ' + lbdevice + "\n" + \
-              "set timeout -1\n" + \
-              "expect Passphrase\n" + \
-              "send " + password_base + \
-              container_file + '\\r' + "\n" + \
-              "expect All\n" + \
-              "expect eof\n" + \
-              '"'
-
         if verbose:
             status_item('Command')
             status_result('sudo tcplay -m ' + container_file + ' -d ' + \
                           lbdevice)
-
         status_item('')
         child = pexpect.spawn('sudo tcplay -m ' + container_file + ' -d ' + \
                               lbdevice)
-        # security risk to enable this, but useful for debugging
-        # child.logfile = sys.stdout
         child.expect('Passphrase')
         child.sendline(password_base + container_file + "\r")
-        child.expect(pexpect.EOF)
-        if re.match('.*All ok!.*', str(child.before), re.DOTALL):
+        i = child.expect(['All ok!'])
+        if i==0:
             status_result('MAPPED,', 4, no_newline=True)
         else:
+            child.kill(0)
             status_result('FAIL', 3)
             return 1
 
-    except subprocess.CalledProcessError, e:
-        status_result('COMMAND ERROR ' + str(e), 3)
-        return 1
+        child.expect(pexpect.EOF)
     except Exception, e:
-        status_result('COMMAND NOT FOUND ' + str(e), 3)
+        status_result('tcplay FAILURE', 3)
+        status_item('Debugging')
+        status_result("\n\n" + str(e) + "\n")
         return 1
 
     if os.path.islink('/dev/mapper/' + container_file):
