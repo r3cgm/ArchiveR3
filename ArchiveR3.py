@@ -786,7 +786,6 @@ def mapper_container(lbdevice, container_file, password_base, verbose=False):
             child.kill(0)
             status_result('FAIL', 3)
             return 1
-
         child.expect(pexpect.EOF)
     except Exception, e:
         status_result('tcplay FAILURE', 3)
