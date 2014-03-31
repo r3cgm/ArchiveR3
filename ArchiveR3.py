@@ -349,38 +349,22 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
         return 1
 
     try:
-        cmd = 'expect -c "spawn sudo tcplay ' + \
-              '-i -d ' + lbdevice + "\n" + \
-              "set timeout 5\n" + \
-              "expect Passphrase\n" + \
-              "send " + password_base + \
-              container_file + '\\r' + "\n" + \
-              "expect eof\n" + \
-              '"'
-        p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        result = p.communicate()[0]
-        if re.match(r'.*Incorrect password or not a TrueCrypt volume.*',
-                    result, re.DOTALL):
-            status_result('BAD PASSWORD / CORRUPTED', 3)
-            return 1
-        elif re.match('.*PBKDF2.*', result, re.DOTALL):
+        child = pexpect.spawn('sudo tcplay -i -d ' + lbdevice)
+        child.expect('Passphrase')
+        child.sendline(password_base + container_file + "\r")
+
+        i = child.expect(['PBKDF2', 'Incorrect password'])
+        if i==0:
             status_result('PASSWORD VALID', 1)
-            if verbose:
-                print
-                print result
-        else:
-            status_result('UNKNOWN PASSWORD CONDITION', 3)
+        elif i==1:
+            status_result('BAD PASSWORD / CORRUPTED', 3)
+            child.kill(0)
             return 1
-    except subprocess.CalledProcessError, e:
-        status_result('PASSWORD FAILURE')
-        status_item('Map Command')
-        status_result('ERROR', 3)
-        return 1
+        child.expect(pexpect.EOF)
     except Exception, e:
-        status_result('FAILURE')
-        status_item('Map Command')
-        status_result('NOT FOUND', 3)
+        status_result('tcplay FAILURE', 3)
+        status_item('Debugging')
+        status_result("\n\n" + str(e) + "\n")
         return 1
 
 
@@ -764,7 +748,7 @@ def umount(mount_point, remove=False):
         except:
             status_result('REMOVAL FAILED', 1)
             return 1
-        status_result('REMOVED', 4)
+        status_result('REMOVED MOUNT POINT', 4)
 
 
 def unmap(container_file):
