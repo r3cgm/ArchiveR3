@@ -60,14 +60,17 @@ class backup:
                             'unmapping, and removing the loopback device '
                             'associated with the encrypted container.')
         parser.add_argument('--create', action='store_true',
-                            help='Create raw archive container without '
-                            'prompting.')
+                            help='Create container without prompting.')
         parser.add_argument('--encrypt', action='store_true',
-                            help='Encrypt archive without prompting.')
+                            help='Encrypt container without prompting.')
         parser.add_argument('--format', action='store_true',
-                            help='Encrypt the archive without prompting.')
+                            help='Format encrypted container without '
+                            'prompting.')
         parser.add_argument('--mountcreate', action='store_true',
                             help='Create the mount point automatically.')
+        parser.add_argument('--reprovision', action='store_true',
+                            help='Reprovision the container automatically '
+                            'if too small.')
         parser.add_argument('-n', '--nocleanup', action='store_true',
                             help='Do not perform normal cleanup operations '
                             'after backing up such as unmounting and '
@@ -93,6 +96,7 @@ class backup:
             self.args.encrypt = True
             self.args.format = True
             self.args.mountcreate = True
+            self.args.reprovision = True
 
     def calc_container_overhead(self, container_size):
         """ Given a container size, calculate the expected overhead due
@@ -277,8 +281,13 @@ class backup:
                 status_item('')
                 status_result('OUT OF SPACE', capacity_est_condition)
 
-                status_item('Reprovision? (y/n)')
-                if raw_input() == 'y':
+                if self.args.reprovision:
+                    status_item('!! REPROVISION?')
+                    status_result('CONFIRMED', 4)
+                else:
+                    status_item('!! REPROVISION? (y/n)')
+
+                if self.args.reprovision or raw_input() == 'y':
                     self.cleanup()
                     if self.create_archive(self.config.archive_list[i],
                                            container, self.config.backup_dir,
