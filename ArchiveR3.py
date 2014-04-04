@@ -47,14 +47,70 @@ class Unbuffered:
         return getattr(self.stream, attr)
 
 
-def enqueue_output(out, queue):
-    for line in iter(out.readline, b''):
-        queue.put(line)
+def status_item(item):
+    sys.stdout.write('%38s: ' % item)
+
+
+def status_result(result, type=0, no_newline=False):
+    """ Show the results of the item currently being worked on.  Optionally,
+    show a color-coded result based on the type parameter where 0 is normal,
+    1 is success (green), 2 is warning (yellow), 3 is error (red), and 4 is
+    success with action taken (blue). """
+    if type == 0:
+        print result,
+    elif type == 1:
+        print '\033[32m' + result + '\033[0m',
+    elif type == 2:
+        print '\033[33m' + result + '\033[0m',
+    elif type == 3:
+        print '\033[31m' + result + '\033[0m',
+    elif type == 4:
+        print '\033[34m' + result + '\033[0m',
+    else:
+        print '\033[31mINVALID status_result() type specified\033[0m',
+
+    if not no_newline:
+        print
 
 
 def print_pipe(type_type, pipe):
     for line in iter(pipe.readline, ''):
         print('    ' + line.rstrip())
+
+
+def print_header(activity):
+    """ Display the start time of the activity and return the it for later
+    reference. """
+    time_init = time.time()
+    print '*' * 79
+    print
+    print 'START: ' + activity + ' - ' + \
+        time.strftime("%B %-d, %Y %H:%M:%S", time.localtime(time_init))
+    print
+    print '*' * 79
+    return time_init
+
+
+def print_footer(activity, time_init):
+    time_final = time.time()
+    print '*' * 79
+    print
+    print 'END: ' + activity + ' - ' + \
+          time.strftime("%B %-d, %Y %H:%M:%S", time.localtime(time_final))
+    print
+    status_item('Elapsed Time')
+    status_result(str(int(time_final - time_init)) + ' seconds')
+    print
+    print '*' * 79
+
+
+def section_break():
+    print '-' * 79
+
+
+def enqueue_output(out, queue):
+    for line in iter(out.readline, b''):
+        queue.put(line)
 
 
 def dir_size(dir, block_size=0):
@@ -233,7 +289,7 @@ def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
             return 1
 
     if not read and not write:
-        status_result('FOUND', 1)
+        status_result('FOUND')
     else:
         # make sure we get a newline in
         status_result('')
@@ -243,8 +299,6 @@ def loopback_exists(file):
     """ Determine if a loopback device has been allocated for a particular
     file.  If found, return it.  If not, return 0.  Note this is opposite
     normal functions where 0 means success. """
-#   lbmatch = subprocess.Popen(['sudo', 'losetup', '--associated', file],
-#                              stdout=subprocess.PIPE).communicate()[0]
     # stderr prints 'SOMEFILE: No such file or directory' if not found
     # TODO: verify trapping stderr here works
     lbmatch = subprocess.Popen(['sudo', 'losetup', '--associated', file],
@@ -261,8 +315,6 @@ def loopback_exists(file):
 def loopback_cleanup(file):
     """ Attempt to clean up any residual loopback devices associated with a
     particular file which are not in use. """
-#   matches = subprocess.Popen(['sudo', 'losetup', '--all'],
-#                              stdout=subprocess.PIPE).communicate()[0]
     # stderr prints 'SOMEFILE: No such file or directory' if not found
     # TODO: verify trapping stderr here works
     matches = subprocess.Popen(['sudo', 'losetup', '--all'],
@@ -482,12 +534,12 @@ def config_validate(config):
     if rc:
         return 1
 
-    status_item('Data ' + config.data_dir)
+    status_item('Data Directory' + config.data_dir)
     rc = dir_validate(config.data_dir, create=1, write=1)
     if rc:
         return 1
 
-    status_item('Logging ' + config.log_dir)
+    status_item('Log Directory' + config.log_dir)
     rc = dir_validate(config.log_dir, create=1, write=1)
     if rc:
         return 1
@@ -701,6 +753,10 @@ def mount_check(archive_map, archive_mount, mountcreate=False, verbose=False):
     if dir_validate(archive_mount, create=True, sudo=True, auto=mountcreate):
         return 1
 
+    if verbose:
+        status_item('Command')
+        status_result('sudo mount ' + archive_map + ' ' + archive_mount)
+
     status_item('Mount Check')
     p1 = subprocess.Popen(['sudo', 'mountpoint', archive_mount],
                           stdout=subprocess.PIPE)
@@ -854,40 +910,6 @@ def filesystem_format(archive_map, verbose=False):
     print
 
 
-def print_header(activity):
-    """ Display the start time of the activity and return the it for later
-    reference. """
-    time_init = time.time()
-    print '*' * 79
-    print
-    print 'START: ' + activity + ' - ' + \
-        time.strftime("%B %-d, %Y %H:%M:%S", time.localtime(time_init))
-    print
-    print '*' * 79
-    return time_init
-
-
-def print_footer(activity, time_init):
-    time_final = time.time()
-    print '*' * 79
-    print
-    print 'END: ' + activity + ' - ' + \
-          time.strftime("%B %-d, %Y %H:%M:%S", time.localtime(time_final))
-    print
-    status_item('Elapsed Time')
-    status_result(str(int(time_final - time_init)) + ' seconds')
-    print
-    print '*' * 79
-
-
-def section_break():
-    print '-' * 79
-
-
-def status_item(item):
-    sys.stdout.write('%38s: ' % item)
-
-
 def sync(source, target, bwlimit=1300):
     """ Synchronize files from a source to a target location. """
     status_item('Sync')
@@ -931,25 +953,3 @@ def sync(source, target, bwlimit=1300):
     status_item('')
     status_result('SYNCHRONIZED', 1)
     print
-
-
-def status_result(result, type=0, no_newline=False):
-    """ Show the results of the item currently being worked on.  Optionally,
-    show a color-coded result based on the type parameter where 0 is normal,
-    1 is success (green), 2 is warning (yellow), 3 is error (red), and 4 is
-    success with action taken (blue). """
-    if type == 0:
-        print result,
-    elif type == 1:
-        print '\033[32m' + result + '\033[0m',
-    elif type == 2:
-        print '\033[33m' + result + '\033[0m',
-    elif type == 3:
-        print '\033[31m' + result + '\033[0m',
-    elif type == 4:
-        print '\033[34m' + result + '\033[0m',
-    else:
-        print '\033[31mINVALID status_result() type specified\033[0m',
-
-    if not no_newline:
-        print

@@ -12,6 +12,7 @@ import math
 import re
 import subprocess
 import sys
+import time
 
 
 class backup:
@@ -28,6 +29,7 @@ class backup:
         # Plus 7.5% relative overhead.
         self.container_overhead_fixed = 6225865
         self.container_overhead_percent = 7.5
+        self.logfile = 'ArchiveR3-' + time.strftime("%Y%m%d-%H%M%S")
 
     def args_process(self):
         """ Process command-line arguments. """
@@ -434,6 +436,9 @@ class backup:
                         status_result(str(self.args.bwlimit) + ' KBps')
                     else:
                         status_result('NONE', 1)
+
+                    status_item('Logfile')
+                    status_result(self.config.log_dir + self.logfile)
  
                     rc = self.backup()
                     status_item('Backup')
