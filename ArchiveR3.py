@@ -488,7 +488,8 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
 def config_read(config_file):
     """ Read the configuration.  Return a ConfigParser object on success or
     nothing on failure. """
-    status_item('Config \'' + config_file + '\'')
+    status_item('Configuration File')
+    status_result(config_file, no_newline=True)
 
     if not os.path.isfile(config_file):
         status_result('NOT FOUND', 3)
@@ -534,12 +535,12 @@ def config_validate(config):
     if rc:
         return 1
 
-    status_item('Data Directory' + config.data_dir)
+    status_item('Data Directory ' + config.data_dir)
     rc = dir_validate(config.data_dir, create=1, write=1)
     if rc:
         return 1
 
-    status_item('Log Directory' + config.log_dir)
+    status_item('Log Directory ' + config.log_dir)
     rc = dir_validate(config.log_dir, create=1, write=1)
     if rc:
         return 1

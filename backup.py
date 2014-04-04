@@ -29,7 +29,7 @@ class backup:
         # Plus 7.5% relative overhead.
         self.container_overhead_fixed = 6225865
         self.container_overhead_percent = 7.5
-        self.logfile = 'ArchiveR3-' + time.strftime("%Y%m%d-%H%M%S")
+        self.logfile = 'ArchiveR3-' + time.strftime("%Y%m%d-%H%M%S") + '.log'
 
     def args_process(self):
         """ Process command-line arguments. """
@@ -439,6 +439,10 @@ class backup:
 
                     status_item('Logfile')
                     status_result(self.config.log_dir + self.logfile)
+
+                    with open(self.config.log_dir + self.logfile, 'a') \
+                        as logfile:
+                        logfile.write('appended text')
  
                     rc = self.backup()
                     status_item('Backup')
