@@ -2,7 +2,7 @@
 
 # System libraries
 import re
-import shlex, subprocess
+import shlex
 import struct
 import subprocess
 import sys
@@ -25,7 +25,8 @@ except ImportError, e:
     print 'Hint: try running "pip install pexpect"'
     sys.exit(1)
 
-# https://stackoverflow.com/questions/375427/non-blocking-read-on-a-subprocess-pipe-in-python
+# https://stackoverflow.com/questions/375427
+# /non-blocking-read-on-a-subprocess-pipe-in-python
 try:
     from Queue import Queue, Empty
 except ImportError:
@@ -190,14 +191,14 @@ def dir_size(dir, block_size=0):
 
     status_result('DONE', 1)
     status_item('')
-    status_result('files ' + str(file_count) + ' dirs ' + str(dir_count) + \
-        ' size ' + str(total_size) + ' (' + size(total_size) + ')')
+    status_result('files ' + str(file_count) + ' dirs ' + str(dir_count) +
+                  ' size ' + str(total_size) + ' (' + size(total_size) + ')')
     return total_size
 
 
 def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
     """ Validate that a directory exists.
-    
+
     Optional parameters:
 
       auto=True         create the directory automatically; requires create=1
@@ -406,9 +407,9 @@ def loopback_encrypted(lbdevice, password_base, backup_dir, container_file,
         child.sendline(password_base + container_file + "\r")
 
         i = child.expect(['PBKDF2', 'Incorrect password'])
-        if i==0:
+        if i == 0:
             status_result('PASSWORD VALID', 1)
-        elif i==1:
+        elif i == 1:
             status_result('BAD PASSWORD / CORRUPTED', 3)
             child.kill(0)
             return 1
@@ -449,7 +450,7 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
 
         q = Queue()
         t = Thread(target=enqueue_output, args=(p.stdout, q))
-        t.daemon = True # thread dies with the program
+        t.daemon = True  # thread dies with the program
         t.start()
 
         iter = 0
@@ -463,9 +464,9 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
                 cmd = 'sudo killall tcplay --signal SIGUSR1'
                 subprocess.Popen(shlex.split(cmd), stderr=subprocess.PIPE)
             try:
-                line = q.get(timeout=0.1) # or q.get(timeout=.1)
+                line = q.get(timeout=0.1)  # or q.get(timeout=.1)
             except Empty:
-                pass # no output
+                pass  # no output
             else:
                 print '    ' + line.rstrip()
             iter += 1
@@ -829,15 +830,15 @@ def mapper_container(lbdevice, container_file, password_base, verbose=False):
     try:
         if verbose:
             status_item('Command')
-            status_result('sudo tcplay -m ' + container_file + ' -d ' + \
+            status_result('sudo tcplay -m ' + container_file + ' -d ' +
                           lbdevice)
         status_item('')
-        child = pexpect.spawn('sudo tcplay -m ' + container_file + ' -d ' + \
+        child = pexpect.spawn('sudo tcplay -m ' + container_file + ' -d ' +
                               lbdevice)
         child.expect('Passphrase')
         child.sendline(password_base + container_file + "\r")
         i = child.expect(['All ok!'])
-        if i==0:
+        if i == 0:
             status_result('MAPPED,', 4, no_newline=True)
         else:
             child.kill(0)
