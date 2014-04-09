@@ -8,6 +8,7 @@ except ImportError, e:
     print e
     print 'Hint: try running "pip install hurry.filesize"'
     sys.exit(1)
+import logging
 import math
 import re
 import subprocess
@@ -412,6 +413,31 @@ class backup:
 
             self.config = config_read(self.args.config)
 
+            status_item('Log Directory ' + self.config.log_dir)
+            rc = dir_validate(self.config.log_dir, create=1, write=1)
+            if rc:
+                return 1
+
+            logger = logging.getLogger()
+            logger.setLevel(logging.DEBUG)
+
+            # create console handler
+            handler = logging.StreamHandler()
+            handler.setLevel(logging.DEBUG)
+            formatter = logging.Formatter('%(asctime)s %(message)s')
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+      
+            # create file handler
+            handler = logging.FileHandler(os.path.join(self.config.log_dir, \
+                                          self.logfile))
+            handler.setLevel(logging.DEBUG)
+            formatter = logging.Formatter('%(asctime)s %(message)s')
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+      
+            logger.debug('Hello')
+
             if self.config:
                 if config_validate(self.config):
                     status_item('Configuration')
@@ -430,10 +456,6 @@ class backup:
 
                     status_item('Logfile')
                     status_result(self.config.log_dir + self.logfile)
-
-                    with open(self.config.log_dir + self.logfile,
-                              'a') as logfile:
-                        logfile.write('appended text')
 
                     rc = self.backup()
                     status_item('Backup')

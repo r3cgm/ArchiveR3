@@ -541,11 +541,6 @@ def config_validate(config):
     if rc:
         return 1
 
-    status_item('Log Directory ' + config.log_dir)
-    rc = dir_validate(config.log_dir, create=1, write=1)
-    if rc:
-        return 1
-
     status_item('Password Base')
     if config.password_base:
         status_result('FOUND', 1)
