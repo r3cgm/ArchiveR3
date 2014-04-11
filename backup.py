@@ -2,6 +2,7 @@
 
 from ArchiveR3 import *
 import argparse
+from colorlog import ColoredFormatter
 try:
     from hurry.filesize import size
 except ImportError, e:
@@ -411,42 +412,54 @@ class backup:
             self.args_process()
             time_init = print_header('backup')
 
-            self.config = config_read(self.args.config)
-
-            status_item('Log Directory ' + self.config.log_dir)
-            rc = dir_validate(self.config.log_dir, create=1, write=1)
-            if rc:
-                return 1
-
             logger = logging.getLogger()
             logger.setLevel(logging.DEBUG)
 
             # create console handler
             handler = logging.StreamHandler()
             handler.setLevel(logging.DEBUG)
-            formatter = logging.Formatter('%(asctime)s %(message)s')
+            # formatter = logging.Formatter('%(asctime)s %(message)s')
+            formatter = ColoredFormatter('%(asctime)s %(log_color)s%(levelname)-8s %(message)s%(reset)s', datefmt=None, reset=True, log_colors={
+                'DEBUG':    'cyan',
+                'INFO':     'green',
+                'WARNING':  'yellow',
+                'ERROR':    'red',
+                'CRITICAL': 'red',
+            }
+            )
             handler.setFormatter(formatter)
             logger.addHandler(handler)
       
-            # create file handler
-            handler = logging.FileHandler(os.path.join(self.config.log_dir, \
-                                          self.logfile))
-            handler.setLevel(logging.DEBUG)
-            formatter = logging.Formatter('%(asctime)s %(message)s')
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-      
-            logger.debug('Hello')
+            logger.info('reading config file \'' + self.args.config + '\'')
+            self.config = config_read(self.args.config)
 
             if self.config:
+                logger.info('validating config file \'' + self.args.config +
+                            '\'')
                 if config_validate(self.config):
-                    status_item('Configuration')
-                    status_result('VALIDATION FAILED', 3)
-                    status_item('Backup')
-                    status_result('FAILED', 3)
+                    logger.error('config file \'' + self.args.config + '\' invalid')
+                    logger.critical('backup failed')
+#                   status_item('Configuration')
+#                   status_result('VALIDATION FAILED', 3)
+#                   status_item('Backup')
+#                   status_result('FAILED', 3)
                 else:
-                    status_item('Configuration')
-                    status_result('VALIDATED', 1)
+#                   status_item('Configuration')
+                    logger.info('config file \'' + self.args.config + '\' valid')
+#                   status_result('VALIDATED', 1)
+#                   status_item('Log Directory ' + self.config.log_dir)
+                    logger.info('validating log directory \'' + self.config.log_dir + '\'')
+                    rc = dir_validate(self.config.log_dir, create=1, write=1)
+                    if rc:
+                        return 1
+
+                    # create file handler
+                    handler = logging.FileHandler(os.path.join(self.config.log_dir, \
+                                                  self.logfile))
+                    handler.setLevel(logging.DEBUG)
+                    formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
+                    handler.setFormatter(formatter)
+                    logger.addHandler(handler)
 
                     status_item('Bandwidth Limit')
                     if self.args.bwlimit:
