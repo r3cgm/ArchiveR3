@@ -432,11 +432,11 @@ class backup:
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 
-            logger.info('reading configuration file ' + self.args.config)
+            logger.info('reading configuration file: ' + self.args.config)
             self.config = config_read(self.args.config)
 
             if self.config:
-                logger.info('validating configuration file')
+                logger.info('validating configuration')
                 if config_validate(self.config):
                     logger.error('configuration file invalid')
                     logger.critical('backup failed')
