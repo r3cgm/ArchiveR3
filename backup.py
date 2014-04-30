@@ -436,7 +436,7 @@ class backup:
                                              'INFO':     'green',
                                              'WARNING':  'yellow',
                                              'ERROR':    'red',
-                                             'CRITICAL': 'red',
+                                             'CRITICAL': 'purple',
                                              })
             handler.setFormatter(formatter)
             logger.addHandler(handler)

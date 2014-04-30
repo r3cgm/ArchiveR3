@@ -198,11 +198,11 @@ def dir_size(dir, block_size=0):
 
 
 def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
-    """ Validate that a directory exists.
+    """ Validate a directory exists.
 
     Optional parameters:
 
-      auto=True         create the directory automatically; requires create=1
+      auto=True         create directory automatically; requires create=True
       create=True       prompt the user to create it
       read=True         read any random file from the directory
       sudo=True         perform mkdir operations with root-level privileges
@@ -210,72 +210,72 @@ def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
 
     Return 1 if no valid directory exists at the end of this function. """
 
+    # TODO - sudo support never implemented
+
     logger = logging.getLogger()
 
     if not os.path.exists(dir):
         if create:
-            logger.warning(dir + 'not found')
-            # TODO logging (return here and resume)
-            status_item('Create? (y/n)')
+            logger.warning(dir + ' not found')
+
             if auto:
-                status_result('CONFIRMED', 4)
-            if auto or raw_input() == 'y':
-                status_item(dir)
+                logger.info('automatic directory creation enabled')
+            else:
+                print '\nCreate directory ' + dir + '? [y]',
+                prompt_dircreate = raw_input()
+                print '\n',
+
+            if auto or prompt_dircreate in ['y', '']:
+                logger.warning(dir + ': creating directory')
                 if sudo:
                     try:
                         subprocess.call(['sudo', 'mkdir', dir])
                     except Exception, e:
-                        status_result('ERROR ' + e, 3)
+                        logger.error(dir + ': directory creation failed ' + e)
                 else:
                     os.makedirs(dir)
 
                 if os.path.exists(dir):
-                    status_result('CREATED', 1, no_newline=True)
+                    logger.info(dir + ': directory creation confirmed')
                 else:
-                    status_result('CREATION FAILED', 3)
+                    logger.error(dir + ': directory creation failure')
                     return 1
             else:
-                status_item(dir)
-                status_result('CREATION ABORTED', 3)
+                logger.error(dir + ': user declined directory creation')
                 return 1
         else:
-            status_item(dir)
-            status_result('BAILING', 3)
+            logger.error(dir + ': skipping directory creation')
             return 1
 
     if not os.path.isdir(dir):
-        status_result('NOT A DIRECTORY', 3)
+        logger.error(dir + ': directory does not exist')
         return 1
 
     if write:
+        logger.info(dir + ': write test initiated')
         test_file = '.ArchiveR3-write-test'
         if os.path.exists(dir + test_file):
-            status_result('CRUFT', 3)
-            status_item('')
-            status_result('REMOVE MANUALLY', 2)
-            status_item('')
-            status_result(dir + test_file, 2)
+            logger.error(dir + ': previous test file found: ' + test_file)
+            logger.warning(dir + ': remove test file manually')
             return 1
         try:
             file = open(dir + test_file, 'w')
         except IOError:
-            status_result('NOT WRITEABLE', 3)
+            logger.error(dir + ': could not open test file for writing')
             return 1
         file.write('test write')
         file.close()
         if os.path.isfile(dir + test_file):
             os.remove(dir + test_file)
-            status_result('WRITEABLE', 1, no_newline=True)
+            logger.info(dir + ': confirmed writable')
         else:
-            status_result('NOT WRITEABLE', 3)
+            logger.error(dir + ': file creation succeeded but confirmation '
+                         'failed')
             return 1
 
     if read:
+        logger.info(dir + ': attempt to read 1 byte from first file found')
         read_proved = False
-
-        def dir_error(error):
-            print 'error ' + str(error)
-            return 1
 
         for root, dirs, files in os.walk(dir):
             if files:
@@ -284,21 +284,18 @@ def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
                     test_byte = file.read(1)
                     if test_byte:
                         read_proved = True
-                        status_result('READABLE', 1, no_newline=True)
+                        logger.info(dir + ': confirmed readable')
                     else:
-                        status_result('NOT READABLE', 3)
+                        logger.error(dir + ': file found but could not read '
+                                     '1st byte')
                         return 1
                     break
                 break
         if not read_proved:
-            status_result('NO FILES FOUND', 3)
+            logger.warning(dir + ': no test files found to read')
             return 1
 
-    if not read and not write:
-        status_result('FOUND')
-    else:
-        # make sure we get a newline in
-        status_result('')
+    logger.info(dir + ': existence confirmed')
 
 
 def loopback_exists(file):
@@ -529,7 +526,7 @@ def config_validate(config, interactive):
 
     logger = logging.getLogger()
 
-    logger.info('container storage directory ' + config.backup_dir)
+    logger.info('container directory: ' + config.backup_dir)
     # TODO logging (return here and resume)
     if dir_validate(config.backup_dir, create=interactive, write=1):
         return 1
