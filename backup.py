@@ -79,6 +79,16 @@ class backup:
                             help='Do not perform normal cleanup operations '
                             'after backing up such as unmounting and '
                             'unmapping the archive container.')
+        parser.add_argument('--noninteractive', action='store_true',
+                            help='Assume the backup is being run in the '
+                            'background or as an automatic job.  Do not '
+                            'prompt for any interactive input such as '
+                            'confirming the creation of missing directories. '
+                            'Note that most operations like creating new '
+                            'archives require interactive confirmation or use '
+                            'of command-line options like --mountcreate. '
+                            'Otherwise the default is to conservatively abort '
+                            'rather than risk doing the wrong thing.')
         parser.add_argument('-s', '--skipbackup', action='store_true',
                             help='Skip backup.  This can be useful to test '
                             'basic mounting and unmounting.  Used with '

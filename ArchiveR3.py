@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # System libraries
+import logging
 import re
 import shlex
 import struct
@@ -208,9 +209,13 @@ def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
       write=True        create (and remove) a test file
 
     Return 1 if no valid directory exists at the end of this function. """
+
+    logger = logging.getLogger()
+
     if not os.path.exists(dir):
         if create:
-            status_result('NOT FOUND ', 2)
+            logger.warning(dir + 'not found')
+            # TODO logging (return here and resume)
             status_item('Create? (y/n)')
             if auto:
                 status_result('CONFIRMED', 4)
@@ -487,13 +492,13 @@ def loopback_encrypt(lbdevice, password_base, container_file, verbose=False):
 
 
 def config_read(config_file):
-    """ Read the configuration.  Return a ConfigParser object on success or
-    nothing on failure. """
-    status_item('Configuration File')
-    status_result(config_file, no_newline=True)
+    """ Read the configuration file.  Return a ConfigParser object on success
+    or nothing on failure. """
+
+    logger = logging.getLogger()
 
     if not os.path.isfile(config_file):
-        status_result('NOT FOUND', 3)
+        logger.error('configuration file not found')
         return
 
     config = ConfigParser.RawConfigParser()
@@ -501,10 +506,7 @@ def config_read(config_file):
     try:
         config.read(config_file)
     except ConfigParser.ParsingError, e:
-        status_result('PARSE ERROR', 3)
-        print
-        print str(e)
-        print
+        logger.error('configuration file parsing error: ' + str(e))
         return
 
     config.backup_dir = normalize_dir(config.get('ArchiveR3', 'backup_dir'))
@@ -518,17 +520,18 @@ def config_read(config_file):
         config.getint('ArchiveR3', 'provision_capacity_percent')
     config.provision_capacity_reprovision = \
         config.getint('ArchiveR3', 'provision_capacity_reprovision')
-    status_result('LOADED', 1)
     return config
 
 
 def config_validate(config):
-    """ Make sure that all the configuration settings make sense.  Try to
-    be helpful and intervene if there are issues, otherwise bail. """
+    """ Make sure all the configuration settings make sense.  Try to be helpful
+    and intervene if there are issues, otherwise bail. """
 
-    status_item('Containers ' + config.backup_dir)
-    rc = dir_validate(config.backup_dir, create=1, write=1)
-    if rc:
+    logger = logging.getLogger()
+
+    logger.info('container storage directory ' + config.backup_dir)
+    # TODO logging (return here and resume)
+    if dir_validate(config.backup_dir, create=1, write=1):
         return 1
 
     status_item('Container Mounts ' + config.mount_dir)
