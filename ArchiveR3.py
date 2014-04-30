@@ -523,7 +523,7 @@ def config_read(config_file):
     return config
 
 
-def config_validate(config):
+def config_validate(config, interactive):
     """ Make sure all the configuration settings make sense.  Try to be helpful
     and intervene if there are issues, otherwise bail. """
 
@@ -531,7 +531,7 @@ def config_validate(config):
 
     logger.info('container storage directory ' + config.backup_dir)
     # TODO logging (return here and resume)
-    if dir_validate(config.backup_dir, create=1, write=1):
+    if dir_validate(config.backup_dir, create=interactive, write=1):
         return 1
 
     status_item('Container Mounts ' + config.mount_dir)

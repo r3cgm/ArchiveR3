@@ -79,16 +79,15 @@ class backup:
                             help='Do not perform normal cleanup operations '
                             'after backing up such as unmounting and '
                             'unmapping the archive container.')
-        parser.add_argument('--noninteractive', action='store_true',
-                            help='Assume the backup is being run in the '
-                            'background or as an automatic job.  Do not '
-                            'prompt for any interactive input such as '
-                            'confirming the creation of missing directories. '
-                            'Note that most operations like creating new '
-                            'archives require interactive confirmation or use '
-                            'of command-line options like --mountcreate. '
-                            'Otherwise the default is to conservatively abort '
-                            'rather than risk doing the wrong thing.')
+        parser.add_argument('--interactive', action='store_true',
+                            help='Assume the backup is being run '
+                            'interactively. Prompt for the option to resolve '
+                            'basic issues like creating missing directories, '
+                            'rather than safely and conservatively bailing. '
+                            'Note that most blocking operations like the need '
+                            'to create missing mount points can be '
+                            'automatically performed with corresponding '
+                            'options like --mountcreate.')
         parser.add_argument('-s', '--skipbackup', action='store_true',
                             help='Skip backup.  This can be useful to test '
                             'basic mounting and unmounting.  Used with '
@@ -447,7 +446,7 @@ class backup:
 
             if self.config:
                 logger.info('validating configuration')
-                if config_validate(self.config):
+                if config_validate(self.config, self.args.interactive):
                     logger.error('configuration file invalid')
                     logger.critical('backup failed')
                 else:
