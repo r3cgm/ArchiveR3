@@ -81,15 +81,12 @@ def print_pipe(type_type, pipe):
 
 
 def print_header(activity):
-    """ Display the start time of the activity and return the it for later
-    reference. """
+    """ Display start time of the activity and return it for later reference.
+    """
+    logger = logging.getLogger()
     time_init = time.time()
-    print '*' * 79
-    print
-    print 'START: ' + activity + ' - ' + \
-        time.strftime("%B %-d, %Y %H:%M:%S", time.localtime(time_init))
-    print
-    print '*' * 79
+    logger.info('ArchiveR3 ' + activity + ' START - ' + \
+        time.strftime("%B %-d, %Y %H:%M:%S", time.localtime(time_init)))
     return time_init
 
 
@@ -512,7 +509,6 @@ def config_read(config_file):
     config.data_dir = normalize_dir(config.get('ArchiveR3', 'data_dir'))
     config.log_dir = normalize_dir(config.get('ArchiveR3', 'log_dir'))
     config.password_base = config.get('ArchiveR3', 'password_base')
-    config.stale_age = config.getint('ArchiveR3', 'stale_age')
     config.provision_capacity_percent = \
         config.getint('ArchiveR3', 'provision_capacity_percent')
     config.provision_capacity_reprovision = \
@@ -526,37 +522,38 @@ def config_validate(config, interactive):
 
     logger = logging.getLogger()
 
-    logger.info('container directory: ' + config.backup_dir)
-    # TODO logging (return here and resume)
+    logger.info(config.backup_dir + ': container directory')
     if dir_validate(config.backup_dir, create=interactive, write=1):
         return 1
 
-    status_item('Container Mounts ' + config.mount_dir)
-    rc = dir_validate(config.mount_dir)
-    if rc:
+    logger.info(config.mount_dir + ': mount point directory')
+    if dir_validate(config.mount_dir):
         return 1
 
-    status_item('Data Directory ' + config.data_dir)
-    rc = dir_validate(config.data_dir, create=1, write=1)
-    if rc:
+    logger.info(config.data_dir + ': data directory')
+    if dir_validate(config.data_dir, create=1, write=1):
         return 1
 
-    status_item('Password Base')
     if config.password_base:
-        status_result('FOUND', 1)
+        logger.info('password base found')
     else:
-        status_result('MISSING', 3)
+        logger.error('password base missing from config file')
+        return 1
 
-    status_item('Stale age (minutes)')
-    status_result(str(config.stale_age) + ' !UNUSED!')
+    logger.info('provision container initial capacity: ' +
+                str(config.provision_capacity_percent) + '%')
 
-    status_item('Provision Capacity')
-    status_result(str(config.provision_capacity_percent) + '%')
+    logger.info('reprovision when container reaches: ' +
+                str(config.provision_capacity_reprovision) + '%')
 
-    status_item('Reprovision Capacity')
-    status_result(str(config.provision_capacity_reprovision) + '%')
+    # create a blackhole stream so that we can redirect the output of
+    # dependency utilities. for example, send the output of 'dd --version' to
+    # /dev/null so that it does not appear inline while this program is
+    # running
 
     devnull = open('/dev/null', 'w')
+
+    # TODO logging (return here and resume)
 
     status_item('Dependencies (* = sudo)')
     try:

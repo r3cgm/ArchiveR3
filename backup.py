@@ -419,7 +419,6 @@ class backup:
 
         try:
             self.args_process()
-            time_init = print_header('backup')
 
             logger = logging.getLogger()
             logger.setLevel(logging.DEBUG)
@@ -427,7 +426,6 @@ class backup:
             # create console handler
             handler = logging.StreamHandler()
             handler.setLevel(logging.DEBUG)
-            # formatter = logging.Formatter('%(asctime)s %(message)s')
             formatter = ColoredFormatter('%(asctime)s %(log_color)s'
                                          '%(levelname)-8s %(message)s'
                                          '%(reset)s', datefmt=None,
@@ -440,17 +438,20 @@ class backup:
                                              })
             handler.setFormatter(formatter)
             logger.addHandler(handler)
+            
+            time_init = print_header('BACKUP')
 
-            logger.info('reading configuration file: ' + self.args.config)
+            logger.info(self.args.config + ': configuration file loading')
             self.config = config_read(self.args.config)
 
             if self.config:
-                logger.info('validating configuration')
+                logger.info(self.args.config + ': validating configuration')
                 if config_validate(self.config, self.args.interactive):
                     logger.error('configuration file invalid')
                     logger.critical('backup failed')
                 else:
-                    logger.info('configuration file valid')
+                    logger.info(self.args.config +
+                                ': configuration file valid')
                     logger.info('validating log directory ' +
                                 self.config.log_dir)
 
