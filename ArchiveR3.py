@@ -216,7 +216,7 @@ def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
             logger.warning(dir + ' not found')
 
             if auto:
-                logger.info('automatic directory creation enabled')
+                logger.info('automatic directory created')
             else:
                 print '\nCreate directory ' + dir + '? [y]',
                 prompt_dircreate = raw_input()
@@ -292,7 +292,7 @@ def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
             logger.warning(dir + ': no test files found to read')
             return 1
 
-    logger.info(dir + ': existence confirmed')
+    logger.info(dir + ': exists')
 
 
 def loopback_exists(file):
