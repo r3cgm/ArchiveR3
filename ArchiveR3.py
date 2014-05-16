@@ -249,7 +249,7 @@ def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
         return 1
 
     if write:
-        logger.info(dir + ': write test initiated')
+        logger.info(dir + ': write test')
         test_file = '.ArchiveR3-write-test'
         if os.path.exists(dir + test_file):
             logger.error(dir + ': previous test file found: ' + test_file)
@@ -264,7 +264,7 @@ def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
         file.close()
         if os.path.isfile(dir + test_file):
             os.remove(dir + test_file)
-            logger.info(dir + ': confirmed writable')
+            logger.info(dir + ': writable')
         else:
             logger.error(dir + ': file creation succeeded but confirmation '
                          'failed')
