@@ -271,7 +271,7 @@ def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
             return 1
 
     if read:
-        logger.info(dir + ': attempt to read 1 byte from first file found')
+        logger.info(dir + ': read test')
         read_proved = False
 
         for root, dirs, files in os.walk(dir):
@@ -281,7 +281,7 @@ def dir_validate(dir, auto=0, create=0, read=0, sudo=0, write=0):
                     test_byte = file.read(1)
                     if test_byte:
                         read_proved = True
-                        logger.info(dir + ': confirmed readable')
+                        logger.info(dir + ': readable')
                     else:
                         logger.error(dir + ': file found but could not read '
                                      '1st byte')
@@ -553,159 +553,152 @@ def config_validate(config, interactive):
 
     devnull = open('/dev/null', 'w')
 
-    # TODO logging (return here and resume)
-
-    status_item('Dependencies (* = sudo)')
     try:
         subprocess.check_call(['dd', '--version'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('dd ERROR', 3)
+        logger.error('dd: error')
         return 1
     except Exception, e:
-        status_result('dd MISSING', 3)
+        logger.error('dd: missing')
         return 1
-    status_result('dd', 1, no_newline=True)
+    logger.info('dd: found')
 
     try:
         subprocess.check_call(['sudo', 'dmsetup', '-h'], stderr=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('*dmsetup ERROR', 3)
+        logger.error('dmsetup (sudo): error')
         return 1
     except Exception, e:
-        status_result('*dmsetup MISSING', 3)
+        logger.error('dmsetup (sudo): missing')
         return 1
-    status_result('*dmsetup', 1, no_newline=True)
+    logger.info('dmsetup (sudo): found')
 
     try:
         subprocess.check_call(['sudo', 'e2fsck'], stderr=devnull)
     except subprocess.CalledProcessError, e:
         if re.match('.*returned non-zero exit status 16.*', str(e)):
-            status_result('*e2fsck', 1, no_newline=True)
+            logger.info('e2fsck (sudo): found')
         else:
-            status_result('*e2fsck ERROR', 3)
+            logger.error('e2fsck (sudo): error')
             return 1
     except Exception, e:
-        status_result('*e2fsck MISSING', 3, no_newline=True)
+        logger.error('e2fsck (sudo): missing')
         return 1
 
     try:
         subprocess.check_call(['expect', '-v'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('expect ERROR', 3)
+        logger.error('expect: error')
         return 1
     except Exception, e:
-        status_result('expect MISSING', 3)
+        logger.error('expect: missing')
         return 1
-    status_result('expect', 1, no_newline=True)
+    logger.info('expect: found')
 
     try:
         subprocess.check_call(['sudo', 'killall', '--version'], stderr=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('*killall ERROR', 3)
+        logger.error('killall (sudo): error')
         return 1
     except Exception, e:
-        status_result('*killall MISSING', 3)
+        logger.error('killall (sudo): missing')
         return 1
-    status_result('*killall', 1)
-
-    status_item('')
+    logger.info('killall (sudo): found')
 
     try:
         subprocess.check_call(['sudo', 'losetup', '-h'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('*losetup ERROR', 3)
+        logger.error('losetup (sudo): error')
         return 1
     except Exception, e:
-        status_result('*losetup MISSING', 3)
+        logger.error('losetup (sudo): missing')
         return 1
-    status_result('*losetup', 1, no_newline=True)
+    logger.info('losetup (sudo): found')
 
     try:
         subprocess.check_call(['sudo', 'mkdir', '--help'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('*mkdir ERROR', 3)
+        logger.error('mkdir (sudo): error')
         return 1
     except Exception, e:
-        status_result('*mkdir MISSING', 3)
+        logger.error('mkdir (sudo): missing')
         return 1
-    status_result('*mkdir', 1, no_newline=True)
+    logger.info('mkdir (sudo): found')
 
     try:
         subprocess.check_call(['sudo', 'mkfs.ext4', '-V'], stderr=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('*mkfs.ext4 ERROR', 3)
+        logger.error('mkfs.ext4 (sudo): error')
         return 1
     except Exception, e:
-        status_result('*mkfs.ext4 MISSING', 3)
+        logger.error('mkfs.ext4 (sudo): missing')
         return 1
-    status_result('*mkfs.ext4', 1, no_newline=True)
+    logger.info('mkfs.ext4 (sudo): found')
 
     try:
         subprocess.check_call(['sudo', 'mount'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('*mount ERROR', 3)
+        logger.error('mount (sudo): error')
         return 1
     except Exception, e:
-        status_result('*mount MISSING', 3)
+        logger.error('mount (sudo): missing')
         return 1
-    status_result('*mount', 1)
-
-    status_item('')
+    logger.info('mount (sudo): found')
 
     try:
         subprocess.check_call(['sudo', 'mountpoint', '/'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('*mountpoint ERROR', 3)
+        logger.error('mountpoint (sudo): error')
         return 1
     except Exception, e:
-        status_result('*mountpoint MISSING', 3)
+        logger.error('mountpoint (sudo): missing')
         return 1
-    status_result('*mountpoint', 1, no_newline=True)
+    logger.info('mountpoint (sudo): found')
 
     try:
         subprocess.check_call(['pv', '--version'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('pv ERROR', 3)
+        logger.error('pv: error')
         return 1
     except Exception, e:
-        status_result('pv MISSING', 3)
+        logger.error('pv: missing')
         return 1
-    status_result('pv', 1, no_newline=True)
+    logger.info('pv: found')
 
     try:
         subprocess.check_call(['sudo', 'rsync', '--version'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('*rsync ERROR', 3)
+        logger.error('rsync (sudo): error')
         return 1
     except Exception, e:
-        status_result('*rsync MISSING', 3)
+        logger.error('rsync (sudo): missing')
         return 1
-    status_result('*rsync', 1, no_newline=True)
+    logger.info('rsync (sudo): found')
 
     try:
         subprocess.check_call(['sudo', 'tcplay', '-v'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('*tcplay ERROR', 3)
+        logger.error('tcplay (sudo): error')
         return 1
     except Exception, e:
-        status_result('*tcplay MISSING', 3)
+        logger.error('tcplay (sudo): missing')
         return 1
-    status_result('*tcplay', 1, no_newline=True)
+    logger.info('tcplay (sudo): found')
 
     try:
         subprocess.check_call(['sudo', 'umount', '-h'], stdout=devnull)
     except subprocess.CalledProcessError, e:
-        status_result('*umount ERROR', 3)
+        logger.error('umount (sudo): error')
         return 1
     except Exception, e:
-        status_result('*umount MISSING', 3)
+        logger.error('umount (sudo): missing')
         return 1
-    status_result('*umount', 1)
+    logger.info('umount (sudo): found')
 
     config.archive_list = config.archives.split()
     for i, s in enumerate(config.archive_list):
         config.archive_list[i] = normalize_dir(s)
-        status_item('Archive ' + config.archive_list[i])
+        # status_item('Archive ' + config.archive_list[i])
         rc = dir_validate(config.archive_list[i], read=1)
         if rc:
             return 1
