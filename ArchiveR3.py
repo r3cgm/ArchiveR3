@@ -916,7 +916,7 @@ def sync(source, target, bwlimit=1300):
               '--progress ' + \
               '--delete ' + \
               '--delete-delay ' + \
-              '--max-delete=100 ' + \
+              '--max-delete=250 ' + \
               '--human-readable ' + \
               '--itemize-changes ' + \
               source.rstrip('/') + ' ' + target
