@@ -7,4 +7,4 @@ Update 2/22/2023 - Although this codebase has not been touched in a while, it sh
 
 DISCLAIMER: This software is provided 'as-is'.  The author takes no responsibility for any data loss or other undesirable consequences as a result of using this tool.
 
-Christopher 'r3cgm' Mann - 1/1/2014
+Geroge 'r3cgm' Mann - 1/1/2014
